@@ -1,22 +1,46 @@
-# Byte-compiled / optimized / DLL files
+# Environments and caches
+.venv/
+venv/
+env/
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Jupyter Notebook checkpoints
+.pytest_cache/
 .ipynb_checkpoints/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
 
-# Virtual environments
-venv/
-.venv/
-env/
-
-# Environment variables & secrets
+# Secrets and local configuration
 .env
+.env.*
+*.pem
+*.key
+secrets*
+credentials*
 
-# macOS
+# OS / editor
 .DS_Store
-
-# IDEs
-.vscode/
 .idea/
+.vscode/
+
+# Raw and derived data are not committed: obtain the archive as described in data/raw/README.md
+data/raw/*
+!data/raw/README.md
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Generated run logs and model artefacts
+*.log
+*.pt
+*.pth
+
+# LaTeX build artefacts
+reports/*.aux
+reports/*.log
+reports/*.out
+reports/*.bbl
+reports/*.blg
+reports/*.synctex.gz
+reports/*.fls
+reports/*.fdb_latexmk
