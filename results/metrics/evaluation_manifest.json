@@ -1,0 +1,158 @@
+{
+  "seed": 42,
+  "outer": {
+    "folds": 5,
+    "repeats": 5,
+    "n_outer_fits_per_model": 25,
+    "fold_hash": "3ece83bae3e0a960"
+  },
+  "inner_folds": 5,
+  "tuning": {
+    "criterion": "log_loss",
+    "naive_bayes": {
+      "model__alpha": [
+        0.5,
+        1.0,
+        2.0
+      ]
+    },
+    "bayesian_network": {
+      "model__pseudo_count": [
+        0.5,
+        1.0,
+        2.0
+      ]
+    },
+    "mlp": {
+      "model__weight_decay": [
+        0.001,
+        0.01
+      ],
+      "model__dropout": [
+        0.3,
+        0.5
+      ]
+    },
+    "random_forest": {
+      "model__n_estimators": [
+        200,
+        500
+      ],
+      "model__max_depth": [
+        3,
+        5,
+        null
+      ]
+    },
+    "gradient_boosting": {
+      "model__learning_rate": [
+        0.05,
+        0.1
+      ],
+      "model__n_estimators": [
+        100,
+        200
+      ],
+      "model__max_depth": [
+        2,
+        3
+      ]
+    },
+    "logistic_regression": {
+      "model__C": [
+        0.01,
+        0.1,
+        1,
+        10
+      ]
+    },
+    "svm": {
+      "model__C": [
+        0.1,
+        1,
+        10
+      ],
+      "model__gamma": [
+        "scale",
+        0.01
+      ]
+    }
+  },
+  "primary_threshold": 0.5,
+  "secondary_threshold": "Youden J on inner out-of-fold predictions of the training fold",
+  "n_bootstrap": 2000,
+  "checks": {
+    "Bayesian Network": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.0003913926380093006,
+      "max_p": 0.9997503711151458
+    },
+    "Gradient Boosting": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.008489021609826152,
+      "max_p": 0.9938514665993176
+    },
+    "Logistic Regression": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.0027861950239408905,
+      "max_p": 0.9997374840663117
+    },
+    "MLP": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.003082559211179614,
+      "max_p": 0.9966287016868591
+    },
+    "Naive Bayes": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 6.806862943855599e-05,
+      "max_p": 0.9999415221049696
+    },
+    "Random Forest": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.0,
+      "max_p": 1.0
+    },
+    "SVM": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.011662111269218622,
+      "max_p": 0.9999814726165236
+    },
+    "identical_folds_across_models": true
+  },
+  "figures": [
+    "roc_curves.png",
+    "pr_curves.png",
+    "confusion_matrices.png",
+    "calibration_curves.png"
+  ],
+  "versions": {
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "pgmpy": "0.1.26",
+    "torch": "2.8.0",
+    "scipy": "1.13.1"
+  },
+  "python": "3.9.6"
+}
