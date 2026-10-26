@@ -1,11 +1,11 @@
-"""Interactive demonstration: enter a hypothetical profile and see the three models' probabilities."""
+"""Interactive demonstration: enter a hypothetical profile and see the six models' probabilities."""
 import pandas as pd
 import streamlit as st
 import altair as alt
 
 from app.views.common import MODEL_COLOR, banner, footer, get_models, require_data
-from src.webapp.content import CALIBRATION_NOTE, MLP_EXPLANATION_NOTE, POPULATION_NOTE
-from src.webapp.inference import (CONTINUOUS, LABELS, OPTIONAL, OPTIONS, STEP, default_values, explain_mlp, validate_inputs)
+from src.webapp.content import PROBABILITY_NOTE, POPULATION_NOTE
+from src.webapp.inference import (CONTINUOUS, LABELS, OPTIONAL, OPTIONS, STEP, default_values, validate_inputs)
 from src.data.eda import PLAUSIBLE
 from src.data.loader import FEATURE_COLUMNS
 
@@ -44,7 +44,7 @@ def render() -> None:
         for i, c in enumerate(FEATURE_COLUMNS):
             with cols[i % 3]:
                 values[c] = _widget(c, defaults)
-        submitted = st.form_submit_button("Estimate with the three models", type="primary")
+        submitted = st.form_submit_button("Estimate with the six models", type="primary")
     if submitted:
         st.session_state["profile_values"] = values
     values = st.session_state.get("profile_values")
@@ -63,40 +63,28 @@ def render() -> None:
     probs = models.predict(row)
     st.markdown("#### Estimated probability of disease (num 1-4) under each model")
     st.caption("For the values last submitted. After changing any input, press **Estimate** again.")
-    cols = st.columns(3)
-    for col, (m, p) in zip(cols, probs.items()):
-        col.metric(m, f"{100 * p:.1f}%")
+    items = list(probs.items())
+    for start in range(0, len(items), 3):
+        for col, (m, p) in zip(st.columns(3), items[start:start + 3]):
+            col.metric(m, f"{100 * p:.1f}%")
     spread = max(probs.values()) - min(probs.values())
     st.altair_chart(alt.Chart(pd.DataFrame({"model": list(probs), "probability": list(probs.values())})).mark_bar().encode(
         alt.X("probability:Q", scale=alt.Scale(domain=[0, 1]), title="P(disease)"), alt.Y("model:N", title=None, sort=list(probs)),
-        alt.Color("model:N", scale=MODEL_COLOR, legend=None), tooltip=["model", alt.Tooltip("probability:Q", format=".3f")]).properties(height=140),
+        alt.Color("model:N", scale=MODEL_COLOR, legend=None), tooltip=["model", alt.Tooltip("probability:Q", format=".3f")]).properties(height=220),
         use_container_width=True)
     if spread >= 0.2:
         st.warning(f"The models disagree by {100 * spread:.0f} percentage points for this profile. In the study, differences in ranking between "
                    "models were within noise, so large disagreement signals that the profile is uncertain or unusual.")
-    st.info(CALIBRATION_NOTE)
+    st.info(PROBABILITY_NOTE)
     unknown = [c for c in OPTIONAL if values.get(c) is None]
     if unknown:
         st.caption("Unknown " + " and ".join(f"`{c}`" for c in unknown) + " was replaced by the training-data mode in every model, "
                    "exactly as in the evaluation; this ignores uncertainty about the missing value.")
     with st.expander("How these numbers were produced"):
         st.markdown(
-            "The three models are the study's pipelines (preprocessing + model) refitted on all 303 rows for this demonstration. "
+            "The six models are the study's pipelines (preprocessing + model) refitted on all 303 rows for this demonstration. "
             f"Hyper-parameters: the {models.hyperparameter_source}: `{models.hyperparameters}`. "
             "No performance claim is made for these refitted models; the performance figures come from the nested cross-validation on the "
             "*Model results* page. The refitted models were not evaluated on any held-out data.")
         st.dataframe(row.T.rename(columns={0: "value entered"}))
-    st.markdown("#### Why did the MLP give this value?")
-    if st.button("Explain the MLP output (SHAP, about 1-2 s)", key="explain"):
-        with st.spinner("Computing SHAP values..."):
-            sv = explain_mlp(models, row)
-        base = sv.attrs["base_value"]
-        st.caption(f"Reference level (mean over 30 background patients): {100 * base:.1f}%. Bars show the change in the MLP's probability attributed to each entered value.")
-        df = pd.DataFrame({"feature": sv.index, "shap": sv.values}).sort_values("shap", key=abs, ascending=False)
-        df["direction"] = df.shap.map(lambda v: "raises probability" if v > 0 else "lowers probability")
-        st.altair_chart(alt.Chart(df).mark_bar().encode(
-            alt.X("shap:Q", title="Change in P(disease)"), alt.Y("feature:N", sort=list(df.feature), title=None),
-            alt.Color("direction:N", scale=alt.Scale(domain=["raises probability", "lowers probability"], range=["#D55E00", "#0072B2"])),
-            tooltip=["feature", alt.Tooltip("shap:Q", format="+.3f")]).properties(height=340), use_container_width=True)
-        st.info(MLP_EXPLANATION_NOTE)
     footer()

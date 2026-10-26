@@ -11,7 +11,6 @@ from src.data.loader import PROJECT_ROOT, get_xy, load_cleveland, load_config
 from src.evaluation.cv import evaluate_model, fold_hash
 from src.evaluation.run_evaluation import MODELS, analyse
 from src.evaluation.splits import outer_folds
-from src.models.pipelines import build_bn_pipeline, build_mlp_pipeline, build_nb_pipeline
 
 METRICS = PROJECT_ROOT / "results" / "metrics"
 needs_results = pytest.mark.skipif(not (METRICS / "oof_predictions.csv").exists(),
@@ -32,8 +31,7 @@ def _synthetic_oof(y, outer, seed=0):
 
 def test_analysis_pipeline_end_to_end_on_synthetic_predictions(tmp_path):
     cfg = copy.deepcopy(load_config())
-    cfg["paths"].update({"figures": str(tmp_path / "fig"), "metrics": str(tmp_path / "met"),
-                         "report_tables": str(tmp_path / "tab")})
+    cfg["paths"].update({"figures": str(tmp_path / "fig"), "metrics": str(tmp_path / "met")})
     cfg["evaluation"]["n_bootstrap"] = 20
     (tmp_path / "met").mkdir()
     X, y = get_xy(load_cleveland(config=cfg)); outer = outer_folds(y, cfg)
@@ -44,11 +42,11 @@ def test_analysis_pipeline_end_to_end_on_synthetic_predictions(tmp_path):
         assert (tmp_path / "met" / f).stat().st_size > 0, f
     for f in ["roc_curves.png", "pr_curves.png", "confusion_matrices.png", "calibration_curves.png"]:
         assert (tmp_path / "fig" / f).stat().st_size > 0, f
-    assert (tmp_path / "tab" / "model_comparison_fold_level.csv").exists()
+    assert (tmp_path / "met" / "model_comparison_fold_level.csv").exists()
     fm = res["fold"]
-    assert len(fm) == 3 * 25 * 2  # models x outer folds x threshold schemes
-    row = fm[(fm.model == "MLP") & (fm.outer_id == 3) & (fm.threshold_scheme == "fixed_0.5")].iloc[0]
-    d = oof[(oof.model == "MLP") & (oof.outer_id == 3)]
+    assert len(fm) == len(MODELS) * 25 * 2  # models x outer folds x threshold schemes
+    row = fm[(fm.model == "SVM") & (fm.outer_id == 3) & (fm.threshold_scheme == "fixed_0.5")].iloc[0]
+    d = oof[(oof.model == "SVM") & (oof.outer_id == 3)]
     assert row["roc_auc"] == pytest.approx(roc_auc_score(d.y_true, d.p_pos))
     assert res["checks"]["identical_folds_across_models"]
     assert json.loads((tmp_path / "met" / "evaluation_manifest.json").read_text())["outer"]["n_outer_fits_per_model"] == 25
@@ -56,7 +54,7 @@ def test_analysis_pipeline_end_to_end_on_synthetic_predictions(tmp_path):
 
 def test_tuning_grids_match_pipeline_parameters():
     cfg = load_config()
-    for key, builder in (("bayesian_network", build_bn_pipeline), ("naive_bayes", build_nb_pipeline), ("mlp", build_mlp_pipeline)):
+    for key, builder in MODELS.values():
         pipe = builder(cfg)
         for param, values in cfg["tuning"][key].items():
             assert param in pipe.get_params(), (key, param)
@@ -74,18 +72,17 @@ def test_saved_folds_match_configuration():
 @needs_results
 def test_saved_predictions_are_complete_and_valid():
     oof = pd.read_csv(METRICS / "oof_predictions.csv")
-    assert set(oof.model) == set(MODELS) and len(oof) == 3 * 25 * 303 // 5
+    assert set(oof.model) == set(MODELS) and len(oof) == len(MODELS) * 25 * 303 // 5
     assert oof.p_pos.between(0, 1).all() and np.isfinite(oof.p_pos).all()
     assert (oof.groupby(["model", "repeat"]).patient.nunique() == 303).all()
 
 
 @needs_results
-@pytest.mark.parametrize("name,builder", [("Naive Bayes", build_nb_pipeline), ("Bayesian Network", build_bn_pipeline),
-                                          ("MLP", build_mlp_pipeline)])
-def test_rerunning_a_fold_reproduces_saved_predictions(name, builder):
+@pytest.mark.parametrize("name", list(MODELS))
+def test_rerunning_a_fold_reproduces_saved_predictions(name):
     """Re-run nested CV (tuning, threshold, refit) for outer fold 7; must equal the stored predictions."""
     cfg = load_config(); X, y = get_xy(load_cleveland(config=cfg)); outer = outer_folds(y, cfg)
-    key = {"Naive Bayes": "naive_bayes", "Bayesian Network": "bayesian_network", "MLP": "mlp"}[name]
+    key, builder = MODELS[name]
     f = 7
     o, _ = evaluate_model(name, builder(cfg), cfg["tuning"][key], X, y, [outer[f]], cfg, 5, verbose=False, fold_offset=f)
     saved = pd.read_csv(METRICS / "oof_predictions.csv")

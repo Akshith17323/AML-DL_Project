@@ -13,24 +13,62 @@
       "model__alpha": [
         0.5,
         1.0,
-        2.0
+        2.0,
+        5.0,
+        10.0
       ]
     },
     "bayesian_network": {
       "model__pseudo_count": [
         0.5,
         1.0,
-        2.0
+        2.0,
+        5.0,
+        10.0
       ]
     },
-    "mlp": {
-      "model__weight_decay": [
-        0.001,
-        0.01
+    "logistic_regression": {
+      "model__C": [
+        0.01,
+        0.1,
+        1,
+        10
+      ]
+    },
+    "svm": {
+      "model__C": [
+        0.1,
+        1,
+        10
       ],
-      "model__dropout": [
-        0.3,
-        0.5
+      "model__gamma": [
+        "scale",
+        0.01
+      ]
+    },
+    "random_forest": {
+      "model__n_estimators": [
+        200,
+        500
+      ],
+      "model__max_depth": [
+        3,
+        5,
+        null
+      ]
+    },
+    "gradient_boosting": {
+      "model__learning_rate": [
+        0.05,
+        0.1
+      ],
+      "model__n_estimators": [
+        100,
+        200
+      ],
+      "model__max_depth": [
+        2,
+        3
       ]
     }
   },
@@ -43,24 +81,48 @@
       "n_repeats": 5,
       "every_patient_once_per_repeat": true,
       "probabilities_valid": true,
-      "min_p": 0.0003913926380093,
-      "max_p": 0.9997503711151458
+      "min_p": 0.0033147047501557,
+      "max_p": 0.9979485881557296
     },
-    "MLP": {
+    "Gradient Boosting": {
       "n_predictions": 1515,
       "n_repeats": 5,
       "every_patient_once_per_repeat": true,
       "probabilities_valid": true,
-      "min_p": 0.0030825592111796,
-      "max_p": 0.9966287016868592
+      "min_p": 0.0084890216098261,
+      "max_p": 0.9938514665993176
+    },
+    "Logistic Regression": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.0027861950239408,
+      "max_p": 0.9997374840663116
     },
     "Naive Bayes": {
       "n_predictions": 1515,
       "n_repeats": 5,
       "every_patient_once_per_repeat": true,
       "probabilities_valid": true,
-      "min_p": 6.806862943855599e-05,
-      "max_p": 0.9999415221049696
+      "min_p": 0.0003162493241171,
+      "max_p": 0.9996265590590244
+    },
+    "Random Forest": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.0,
+      "max_p": 1.0
+    },
+    "SVM": {
+      "n_predictions": 1515,
+      "n_repeats": 5,
+      "every_patient_once_per_repeat": true,
+      "probabilities_valid": true,
+      "min_p": 0.0116621112692186,
+      "max_p": 0.9999814726165236
     },
     "identical_folds_across_models": true
   },
@@ -75,7 +137,6 @@
     "pandas": "2.3.3",
     "scikit-learn": "1.6.1",
     "pgmpy": "0.1.26",
-    "torch": "2.8.0",
     "scipy": "1.13.1"
   },
   "python": "3.9.6"

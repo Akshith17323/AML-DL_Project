@@ -23,14 +23,10 @@ from src.evaluation.cv import evaluate_model, fold_hash
 from src.evaluation.metrics import (calibration_slope_intercept, check_probabilities, compute_metrics,
                                     reliability_table)
 from src.evaluation.splits import outer_folds, save_folds
-from src.models.pipelines import build_bn_pipeline, build_mlp_pipeline, build_nb_pipeline
-
-MODELS = {"Bayesian Network": ("bayesian_network", build_bn_pipeline),
-          "Naive Bayes": ("naive_bayes", build_nb_pipeline),
-          "MLP": ("mlp", build_mlp_pipeline)}
-COLORS = dict(zip(MODELS, sns.color_palette("colorblind", 3)))
-METRIC_COLS = ["roc_auc", "pr_auc", "brier", "log_loss", "ece", "sensitivity", "specificity", "precision", "f1"]
-BOOT_METRICS = ["roc_auc", "pr_auc", "brier", "log_loss", "sensitivity", "specificity"]
+from src.models.pipelines import MODELS
+COLORS = dict(zip(MODELS, sns.color_palette("colorblind", len(MODELS))))
+METRIC_COLS = ["accuracy", "roc_auc", "pr_auc", "brier", "log_loss", "ece", "sensitivity", "specificity", "precision", "f1"]
+BOOT_METRICS = ["accuracy", "roc_auc", "pr_auc", "brier", "log_loss", "sensitivity", "specificity"]
 
 
 # ------------------------------------------------------------------ validation
@@ -136,7 +132,7 @@ def make_figures(oof: pd.DataFrame, pooled: pd.DataFrame, cfg: dict) -> list[str
     sns.set_theme(style="whitegrid", context="notebook")
     saved = []
     auc = pooled[pooled["threshold_scheme"] == "fixed_0.5"].groupby("model")[["roc_auc", "pr_auc"]].mean()
-    prevalence = oof[oof["model"] == "MLP"]["y_true"].mean()
+    prevalence = oof[oof["model"] == list(MODELS)[0]]["y_true"].mean()
 
     def curves(kind):
         fig, ax = plt.subplots(figsize=(5.4, 5))
@@ -162,17 +158,16 @@ def make_figures(oof: pd.DataFrame, pooled: pd.DataFrame, cfg: dict) -> list[str
 
     curves("roc"); curves("pr")
 
-    # confusion matrices: mean pooled counts over repeats, two threshold schemes
+    # confusion matrices: mean pooled counts over repeats at the fixed 0.5 threshold
     fig, axes = plt.subplots(2, 3, figsize=(10, 6.2))
-    for i, scheme in enumerate(["fixed_0.5", "train_youden"]):
-        for j, m in enumerate(MODELS):
-            d = pooled[(pooled["model"] == m) & (pooled["threshold_scheme"] == scheme)][["tn", "fp", "fn", "tp"]].mean()
-            cm = np.array([[d.tn, d.fp], [d.fn, d.tp]])
-            sns.heatmap(cm / cm.sum(axis=1, keepdims=True), annot=np.vectorize(lambda v: f"{v:.1f}")(cm), fmt="",
-                        cmap="Blues", vmin=0, vmax=1, cbar=False, ax=axes[i, j],
-                        xticklabels=["pred 0", "pred 1"], yticklabels=["true 0", "true 1"])
-            axes[i, j].set_title(f"{m}\n{'threshold 0.5' if i == 0 else 'train-fold Youden threshold'}", fontsize=9)
-    fig.suptitle("Confusion matrices (mean counts over 5 repeats; shading = row-normalised)", fontsize=10)
+    for ax, m in zip(axes.ravel(), MODELS):
+        d = pooled[(pooled["model"] == m) & (pooled["threshold_scheme"] == "fixed_0.5")][["tn", "fp", "fn", "tp"]].mean()
+        cm = np.array([[d.tn, d.fp], [d.fn, d.tp]])
+        sns.heatmap(cm / cm.sum(axis=1, keepdims=True), annot=np.vectorize(lambda v: f"{v:.1f}")(cm), fmt="",
+                    cmap="Blues", vmin=0, vmax=1, cbar=False, ax=ax,
+                    xticklabels=["pred 0", "pred 1"], yticklabels=["true 0", "true 1"])
+        ax.set_title(m, fontsize=10)
+    fig.suptitle("Confusion matrices at threshold 0.5 (mean counts over 5 repeats; shading = row-normalised)", fontsize=10)
     fig.tight_layout(); fig.savefig(fig_dir / "confusion_matrices.png", dpi=150); plt.close(fig); saved.append("confusion_matrices.png")
 
     # calibration
@@ -205,7 +200,7 @@ def analyse(cfg: dict, X, y, outer, oof: pd.DataFrame, sel: pd.DataFrame) -> dic
     ci.to_csv(out / "bootstrap_ci.csv", index=False); diffs.to_csv(out / "bootstrap_paired_differences.csv", index=False)
     figs = make_figures(oof, pooled, cfg)
     # report-ready compact table
-    tab = resolve(cfg["paths"]["report_tables"]); tab.mkdir(parents=True, exist_ok=True)
+    tab = out
     f05 = s_fold[s_fold.threshold_scheme == "fixed_0.5"].set_index("model")
     compact = pd.DataFrame({k: [f"{f05.loc[m, k + '_mean']:.3f} ± {f05.loc[m, k + '_sd']:.3f}" for m in MODELS]
                             for k in METRIC_COLS}, index=list(MODELS))
@@ -216,7 +211,7 @@ def analyse(cfg: dict, X, y, outer, oof: pd.DataFrame, sel: pd.DataFrame) -> dic
                 "primary_threshold": cfg["evaluation"]["primary_threshold"],
                 "secondary_threshold": "Youden J on inner out-of-fold predictions of the training fold",
                 "n_bootstrap": cfg["evaluation"]["n_bootstrap"], "checks": checks, "figures": figs,
-                "versions": {p: version(p) for p in ("numpy", "pandas", "scikit-learn", "pgmpy", "torch", "scipy")},
+                "versions": {p: version(p) for p in ("numpy", "pandas", "scikit-learn", "pgmpy", "scipy")},
                 "python": platform.python_version()}
     (out / "evaluation_manifest.json").write_text(json.dumps(manifest, indent=2))
     return {"fold": fold, "pooled": pooled, "s_fold": s_fold, "s_pool": s_pool, "ci": ci, "diffs": diffs, "checks": checks}

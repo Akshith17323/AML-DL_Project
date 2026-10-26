@@ -10,7 +10,7 @@ from src.webapp.inference import FinalModels, train_final_models
 from src.webapp.results_io import MODEL_ORDER, load_results, results_available
 
 # Okabe-Ito colour-blind-safe palette; model identity is also given by labels, never by colour alone.
-PALETTE = ["#0072B2", "#E69F00", "#009E73"]
+PALETTE = ["#0173b2", "#de8f05", "#029e73", "#d55e00", "#cc78bc", "#ca9161"]  # same as the figures (seaborn "colorblind")
 MODEL_COLOR = alt.Scale(domain=MODEL_ORDER, range=PALETTE)
 
 
@@ -45,7 +45,7 @@ def require_data():
         st.stop()
 
 
-@st.cache_resource(show_spinner="Training the three demonstration models on the full dataset (about 2 s)...")
+@st.cache_resource(show_spinner="Training the six demonstration models on the full dataset (a few seconds)...")
 def get_models() -> FinalModels:
     require_data()
     return train_final_models()
@@ -59,6 +59,6 @@ def get_results():
 def require_results():
     if not results_available():
         st.error("Saved evaluation results were not found.")
-        st.markdown("Run `python -m src.evaluation.run_evaluation` (about 30 minutes) to create them.")
+        st.markdown("Run `python -m src.evaluation.run_evaluation` (about 5 minutes) to create them.")
         st.stop()
     return get_results()

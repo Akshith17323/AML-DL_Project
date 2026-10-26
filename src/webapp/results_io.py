@@ -7,7 +7,9 @@ from sklearn.metrics import precision_recall_curve, roc_curve
 from src.data.loader import load_config, resolve
 from src.evaluation.metrics import compute_metrics, reliability_table
 
-MODEL_ORDER = ["Bayesian Network", "Naive Bayes", "MLP"]
+from src.models.pipelines import MODELS
+
+MODEL_ORDER = list(MODELS)
 
 
 def results_available(cfg: dict | None = None) -> bool:
@@ -22,8 +24,7 @@ def load_results(cfg: dict | None = None) -> dict:
             "fold": pd.read_csv(m / "summary_fold_level.csv"),
             "pooled": pd.read_csv(m / "summary_pooled_repeats.csv"),
             "ci": pd.read_csv(m / "bootstrap_ci.csv"),
-            "diff": pd.read_csv(m / "bootstrap_paired_differences.csv"),
-            "attribution": pd.read_csv(m / "mlp_attribution.csv", index_col=0)}
+            "diff": pd.read_csv(m / "bootstrap_paired_differences.csv")}
 
 
 def curve_points(oof: pd.DataFrame, kind: str, repeat: int) -> pd.DataFrame:
@@ -53,6 +54,6 @@ def metrics_at_threshold(oof: pd.DataFrame, threshold: float) -> pd.DataFrame:
     for model, d in oof.groupby("model"):
         per = [compute_metrics(g.y_true, g.p_pos, threshold) for _, g in d.groupby("repeat")]
         rows.append({"model": model, **{k: sum(p[k] for p in per) / len(per) for k in
-                                         ("sensitivity", "specificity", "precision", "f1", "tn", "fp", "fn", "tp")}})
+                                         ("accuracy", "sensitivity", "specificity", "precision", "f1", "tn", "fp", "fn", "tp")}})
     out = pd.DataFrame(rows).set_index("model").reindex(MODEL_ORDER)
     return out
