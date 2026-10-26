@@ -5,9 +5,9 @@ Academic machine learning research that compares three probabilistic classifiers
 > **This is not a clinically validated diagnostic system.** It uses 303 patients from one centre, is evaluated only by internal cross-validation, and must not be used for medical decisions.
 
 ## At a glance
-- **Question:** under an identical, leakage-safe nested cross-validation protocol, do seven classifiers (Bayesian Network, Naive Bayes, Logistic Regression, SVM, Random Forest, Gradient Boosting, MLP) differ in discrimination and in probability calibration on 303 Cleveland patients?
-- **Ranking:** all seven reach ROC AUC ≈ 0.90–0.91 (Gradient Boosting slightly lower at 0.895); no paired difference is clearly distinguishable from zero.
-- **Calibration:** linear models (LR, SVM) and tree ensembles (RF, GB) are better calibrated than BN/NB; SVM achieves the lowest Brier score (0.119); BN and NB remain over-confident.
+- **Question:** under an identical, leakage-safe nested cross-validation protocol, do a domain-informed Bayesian network, Naive Bayes and a small MLP differ in discrimination and in probability calibration on 303 Cleveland patients?
+- **Ranking:** all three reach ROC AUC of about 0.90-0.91; no paired difference is distinguishable from zero.
+- **Calibration:** the MLP's probabilities are better calibrated; the Bayesian network and Naive Bayes are over-confident (exploratory comparison).
 - **Limits:** one centre, 303 patients, internal validation only; this is not clinical evidence.
 - **Deliverables:** code and tests (`src/`, `tests/`), executed EDA notebook, a Jupyter notebook version of every source file, IEEE-format report (`reports/main.pdf`), 12-slide outline (`reports/presentation_outline.md`) and a Streamlit web interface (`app/`).
 
@@ -41,7 +41,7 @@ python -m src.data.verify                   # lists the archive, extracts proces
 python -m src.data.eda                      # exploratory audit + figures        (seconds)
 python -m src.evaluation.run_evaluation     # nested CV, metrics, figures        (about 30 min on a laptop CPU, measured once)
 python -m src.evaluation.interpret          # SHAP / permutation importance, BN figure (~35 s; needs the step above)
-python -m pytest -q                         # 150 tests; result-dependent tests skip if step 3 has not been run
+python -m pytest -q                         # 135 tests; result-dependent tests skip if step 3 has not been run
 python -m src.evaluation.make_report_assets # report tables, figures, number macros, presentation outline
 python -m src.evaluation.audit_report       # consistency audit: results vs report/README/tables/figures/outline
 streamlit run app/streamlit_app.py          # web interface (needs steps 2-3 above); see app/README.md
@@ -80,7 +80,7 @@ src/evaluation/          splits.py (shared folds), cv.py (nested CV), metrics.py
                          curves.py, interpret.py (attribution, BN figure), make_report_assets.py, audit_report.py
 app/                     Streamlit web interface (streamlit_app.py, views/); design and research notes in app/README.md
 src/webapp/              interface logic (validation, final demo models, results loading); .streamlit/config.toml
-tests/                   150 tests (unit + integration + headless UI)
+tests/                   135 tests (unit + integration + headless UI)
 results/metrics/         CSV/JSON outputs        results/figures/   plots
 reports/                 IEEE LaTeX report (main.tex, references.bib, main.pdf), generated tables/ and figures/,
                          presentation_outline.md, README.md (build instructions)
@@ -168,10 +168,6 @@ All numbers below come from `results/metrics/*.csv` (25 outer folds per model; t
 |---|---|---|---|---|---|---|---|---|
 | Bayesian Network | 0.912 ± 0.036 | 0.911 ± 0.037 | 0.787 ± 0.083 | 0.848 ± 0.065 | 0.818 ± 0.066 | 0.799 ± 0.054 | 0.127 ± 0.030 | 0.417 ± 0.106 |
 | Naive Bayes | 0.907 ± 0.033 | 0.907 ± 0.035 | 0.803 ± 0.090 | 0.850 ± 0.068 | 0.825 ± 0.072 | 0.810 ± 0.056 | 0.134 ± 0.031 | 0.465 ± 0.109 |
-| Logistic Regression | 0.911 ± 0.036 | 0.909 ± 0.039 | 0.780 ± 0.072 | 0.905 ± 0.057 | 0.878 ± 0.066 | 0.823 ± 0.054 | 0.120 ± 0.023 | 0.390 ± 0.066 |
-| SVM | 0.910 ± 0.037 | 0.909 ± 0.041 | 0.790 ± 0.078 | 0.899 ± 0.056 | 0.872 ± 0.066 | 0.826 ± 0.056 | 0.119 ± 0.026 | 0.381 ± 0.073 |
-| Random Forest | 0.906 ± 0.037 | 0.904 ± 0.039 | 0.778 ± 0.080 | 0.882 ± 0.053 | 0.850 ± 0.062 | 0.810 ± 0.059 | 0.126 ± 0.020 | 0.400 ± 0.051 |
-| Gradient Boosting | 0.895 ± 0.047 | 0.888 ± 0.053 | 0.772 ± 0.074 | 0.857 ± 0.056 | 0.824 ± 0.059 | 0.795 ± 0.052 | 0.131 ± 0.029 | 0.418 ± 0.085 |
 | MLP | 0.907 ± 0.037 | 0.905 ± 0.040 | 0.803 ± 0.080 | 0.865 ± 0.059 | 0.837 ± 0.067 | 0.817 ± 0.059 | 0.121 ± 0.025 | 0.391 ± 0.064 |
 
 **Pooled out-of-fold, with patient-level bootstrap 95% CI** (mean of the 5 repeats' pooled predictions)
@@ -180,25 +176,17 @@ All numbers below come from `results/metrics/*.csv` (25 outer folds per model; t
 |---|---|---|---|
 | Bayesian Network | 0.909 [0.873, 0.939] | 0.905 [0.860, 0.939] | 0.127 [0.099, 0.157] |
 | Naive Bayes | 0.904 [0.869, 0.935] | 0.900 [0.853, 0.936] | 0.134 [0.105, 0.166] |
-| Logistic Regression | 0.904 [0.869, 0.936] | 0.893 [0.845, 0.935] | 0.120 [0.097, 0.143] |
-| SVM | 0.907 [0.873, 0.939] | 0.901 [0.860, 0.938] | 0.119 [0.096, 0.142] |
-| Random Forest | 0.903 [0.868, 0.934] | 0.898 [0.854, 0.934] | 0.126 [0.107, 0.147] |
-| Gradient Boosting | 0.890 [0.853, 0.923] | 0.872 [0.818, 0.919] | 0.131 [0.109, 0.155] |
 | MLP | 0.903 [0.868, 0.936] | 0.895 [0.851, 0.933] | 0.121 [0.099, 0.144] |
 
-**Calibration** (pooled out-of-fold per repeat, mean ± SD over 5 repeats; slope 1 and intercept 0 are ideal, slope < 1 means over-confident, slope > 1 means under-confident)
+**Calibration** (pooled out-of-fold per repeat, mean ± SD over 5 repeats; slope 1 and intercept 0 are ideal, slope < 1 means over-confident)
 
 | Model | ECE | Calibration slope | Calibration intercept |
 |---|---|---|---|
 | Bayesian Network | 0.082 ± 0.003 | 0.62 ± 0.01 | -0.06 ± 0.03 |
 | Naive Bayes | 0.101 ± 0.010 | 0.51 ± 0.00 | -0.05 ± 0.02 |
-| Logistic Regression | 0.044 ± 0.012 | 1.03 ± 0.11 | 0.02 ± 0.03 |
-| SVM | 0.047 ± 0.003 | 1.00 ± 0.05 | 0.01 ± 0.03 |
-| Random Forest | 0.069 ± 0.015 | 1.31 ± 0.13 | 0.08 ± 0.03 |
-| Gradient Boosting | 0.053 ± 0.022 | 1.00 ± 0.13 | 0.01 ± 0.05 |
 | MLP | 0.059 ± 0.009 | 1.10 ± 0.05 | 0.09 ± 0.10 |
 
-**Mean confusion counts per repeat** (303 patients, threshold 0.5), TN / FP / FN / TP: BN 139.0 / 25.0 / 29.6 / 109.4; Naive Bayes 139.4 / 24.6 / 27.4 / 111.6; LR 148.4 / 15.6 / 30.6 / 108.4; SVM 147.4 / 16.6 / 29.2 / 109.8; RF 144.6 / 19.4 / 30.8 / 108.2; GB 140.6 / 23.4 / 31.6 / 107.4; MLP 141.8 / 22.2 / 27.4 / 111.6.
+**Mean confusion counts per repeat** (303 patients, threshold 0.5), TN / FP / FN / TP: BN 139.0 / 25.0 / 29.6 / 109.4; Naive Bayes 139.4 / 24.6 / 27.4 / 111.6; MLP 141.8 / 22.2 / 27.4 / 111.6.
 
 **Paired bootstrap differences** (95% CI; see `bootstrap_paired_differences.csv`): ROC AUC and PR AUC differences between any two models are within about ±0.01 and every interval includes 0 (e.g. BN - MLP ROC AUC +0.005 [-0.012, 0.021]). Brier intervals all include 0. Log-loss intervals exclude 0 for Naive Bayes - MLP (+0.073 [0.007, 0.145]) and BN - Naive Bayes (-0.048 [-0.081, -0.018]) but include 0 for BN - MLP (+0.025 [-0.027, 0.080]).
 
@@ -254,7 +242,7 @@ Executed on 2026-10-22 on this machine (macOS, CPU):
 - **Clean-environment rebuild:** a copy of the project *without* `.venv`, results, figures, tables or extracted data, containing only the code, configs and the original `heart+disease.zip`, was run in a fresh virtual environment installed from `requirements-lock.txt` (Python 3.9.6). `python -m src.data.verify`, `src.data.eda`, `src.evaluation.run_evaluation` (about 29.6 min) and `src.evaluation.interpret` all exited 0, and the then-current suite of 96 tests passed.
 - **Result:** the out-of-fold predictions (`oof_predictions.csv`, max difference 0.0), selected hyperparameters, fold-level and pooled summaries, bootstrap CIs and paired differences, `outer_folds.json` and `data_verification.json` were **byte-identical** to the originals; fold hash `3ece83bae3e0a960` and package versions matched. The SHAP/permutation outputs were byte-identical after a fix (below).
 - **A reproducibility bug was found and fixed:** the first clean rebuild gave SHAP values that differed from the original (up to 0.006) because `KernelExplainer` draws coalitions from NumPy's unseeded global RNG. `interpret.py` now seeds it per fold; after the fix the project and clean-environment attribution files are byte-identical. The seeded values differ from the unseeded run by at most 0.0004; no conclusion changed.
-- **Re-check on 2026-10-24** (Hardik's re-run after adding LR, SVM, RF, GB): `python -m pytest -q` → **150 passed**; `pyflakes app src tests` clean; `python -m src.evaluation.run_evaluation` re-run with all 7 models; `python -m src.evaluation.make_report_assets` and `python -m src.evaluation.audit_report` passed all data-integrity checks.
+- **Re-check on 2026-10-23** (same machine, after adding the notebooks): `python -m pytest -q` -> 135 passed; `pyflakes app src tests` clean; `python -m src.evaluation.audit_report` -> 28/28 checks passed. All five web pages were opened in a browser with no errors, including an estimate with the three models and the SHAP explanation. `python tools/run_notebooks.py` on a copy of the project executed all 37 notebooks (36 generated + `01_eda`) with 0 failures, each started from its own folder; outputs were not compared cell by cell. The copied `.venv` launcher scripts were repointed to this folder (see Section 1).
 - **Not verified:** other operating systems, other Python versions (including Python >= 3.10 and pgmpy 1.x), GPUs, or other CPU architectures. The EDA notebook was re-executed from the project root with `jupyter nbconvert` (it ran without error) but its outputs were not compared cell by cell. `python -m src.models.learning_curves` (report Fig. 3) was not part of the clean rebuild.
 
 ## 8. Limitations and known issues
@@ -310,7 +298,7 @@ Executed on 2026-10-22 on this machine (macOS, CPU):
 ### Web interface
 `streamlit run app/streamlit_app.py` serves five pages: Overview, Data explorer, Model results, Risk estimator (demo) and Methods and limitations (Streamlit 1.50.0, which supports this Python 3.9 environment). The pages show saved results, never new estimates; the estimator refits the three pipelines on all 303 rows (joint hyper-parameter setting most often selected in the nested CV, no new tuning), validates inputs, warns on extrapolation, repeats the calibration caveats, and offers a seeded SHAP explanation of the MLP. Every page carries the not-a-medical-device disclaimer, nothing entered is stored, and telemetry is off. 34 tests cover the logic and drive every page headlessly with `AppTest`; the real UI was also checked once in Chrome through the DevTools protocol (manual, not an automated test). Design, research notes, deployment caveats and limits are in `app/README.md`. Deployment is untested and the dataset is not in Git, so a host must provide it.
 
-**Live demo checklist.** From the project root: `.venv/bin/python -m pytest -q` (150 passed), then `.venv/bin/streamlit run app/streamlit_app.py` and open http://localhost:8501. If the port is taken (an earlier run is still open), stop that run or add `--server.port 8502`. The first estimate refits the three models (a few seconds); later ones are cached.
+**Live demo checklist.** From the project root: `.venv/bin/python -m pytest -q` (135 passed), then `.venv/bin/streamlit run app/streamlit_app.py` and open http://localhost:8501. If the port is taken (an earlier run is still open), stop that run or add `--server.port 8502`. The first estimate refits the three models (a few seconds); later ones are cached.
 
 ### Report and presentation
 - `reports/main.pdf` (8 pages, IEEE conference format) built from `reports/main.tex` and `reports/references.bib`; build instructions in `reports/README.md`. Tables and number macros are generated from `results/metrics/` by `python -m src.evaluation.make_report_assets`, so prose numbers cannot drift from the results.

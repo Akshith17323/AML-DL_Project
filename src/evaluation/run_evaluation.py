@@ -23,18 +23,12 @@ from src.evaluation.cv import evaluate_model, fold_hash
 from src.evaluation.metrics import (calibration_slope_intercept, check_probabilities, compute_metrics,
                                     reliability_table)
 from src.evaluation.splits import outer_folds, save_folds
-from src.models.pipelines import (build_bn_pipeline, build_gb_pipeline, build_lr_pipeline,
-                                   build_mlp_pipeline, build_nb_pipeline, build_rf_pipeline,
-                                   build_svm_pipeline)
+from src.models.pipelines import build_bn_pipeline, build_mlp_pipeline, build_nb_pipeline
 
 MODELS = {"Bayesian Network": ("bayesian_network", build_bn_pipeline),
           "Naive Bayes": ("naive_bayes", build_nb_pipeline),
-          "Logistic Regression": ("logistic_regression", build_lr_pipeline),
-          "SVM": ("svm", build_svm_pipeline),
-          "Random Forest": ("random_forest", build_rf_pipeline),
-          "Gradient Boosting": ("gradient_boosting", build_gb_pipeline),
           "MLP": ("mlp", build_mlp_pipeline)}
-COLORS = dict(zip(MODELS, sns.color_palette("colorblind", len(MODELS))))
+COLORS = dict(zip(MODELS, sns.color_palette("colorblind", 3)))
 METRIC_COLS = ["roc_auc", "pr_auc", "brier", "log_loss", "ece", "sensitivity", "specificity", "precision", "f1"]
 BOOT_METRICS = ["roc_auc", "pr_auc", "brier", "log_loss", "sensitivity", "specificity"]
 
@@ -142,7 +136,7 @@ def make_figures(oof: pd.DataFrame, pooled: pd.DataFrame, cfg: dict) -> list[str
     sns.set_theme(style="whitegrid", context="notebook")
     saved = []
     auc = pooled[pooled["threshold_scheme"] == "fixed_0.5"].groupby("model")[["roc_auc", "pr_auc"]].mean()
-    prevalence = oof[oof["model"] == list(MODELS)[0]]["y_true"].mean()
+    prevalence = oof[oof["model"] == "MLP"]["y_true"].mean()
 
     def curves(kind):
         fig, ax = plt.subplots(figsize=(5.4, 5))
@@ -169,8 +163,7 @@ def make_figures(oof: pd.DataFrame, pooled: pd.DataFrame, cfg: dict) -> list[str
     curves("roc"); curves("pr")
 
     # confusion matrices: mean pooled counts over repeats, two threshold schemes
-    n_models = len(MODELS)
-    fig, axes = plt.subplots(2, n_models, figsize=(3.5 * n_models, 6.2))
+    fig, axes = plt.subplots(2, 3, figsize=(10, 6.2))
     for i, scheme in enumerate(["fixed_0.5", "train_youden"]):
         for j, m in enumerate(MODELS):
             d = pooled[(pooled["model"] == m) & (pooled["threshold_scheme"] == scheme)][["tn", "fp", "fn", "tp"]].mean()

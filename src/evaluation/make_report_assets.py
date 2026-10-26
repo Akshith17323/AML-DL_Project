@@ -14,10 +14,7 @@ import pandas as pd
 
 from src.data.loader import load_config, resolve
 
-M = {"Bayesian Network": "BN", "Naive Bayes": "NB",
-     "Logistic Regression": "LR", "SVM": "SVM",
-     "Random Forest": "RF", "Gradient Boosting": "GB",
-     "MLP": "MLP"}
+M = {"Bayesian Network": "BN", "Naive Bayes": "NB", "MLP": "MLP"}
 ORDER = list(M)
 MET = {"roc_auc": "rocauc", "pr_auc": "prauc", "sensitivity": "sens", "specificity": "spec", "precision": "prec",
        "f1": "fone", "brier": "brier", "log_loss": "logloss", "ece": "ece",

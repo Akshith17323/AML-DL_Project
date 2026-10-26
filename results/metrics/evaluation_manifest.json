@@ -32,50 +32,6 @@
         0.3,
         0.5
       ]
-    },
-    "random_forest": {
-      "model__n_estimators": [
-        200,
-        500
-      ],
-      "model__max_depth": [
-        3,
-        5,
-        null
-      ]
-    },
-    "gradient_boosting": {
-      "model__learning_rate": [
-        0.05,
-        0.1
-      ],
-      "model__n_estimators": [
-        100,
-        200
-      ],
-      "model__max_depth": [
-        2,
-        3
-      ]
-    },
-    "logistic_regression": {
-      "model__C": [
-        0.01,
-        0.1,
-        1,
-        10
-      ]
-    },
-    "svm": {
-      "model__C": [
-        0.1,
-        1,
-        10
-      ],
-      "model__gamma": [
-        "scale",
-        0.01
-      ]
     }
   },
   "primary_threshold": 0.5,
@@ -87,32 +43,16 @@
       "n_repeats": 5,
       "every_patient_once_per_repeat": true,
       "probabilities_valid": true,
-      "min_p": 0.0003913926380093006,
+      "min_p": 0.0003913926380093,
       "max_p": 0.9997503711151458
-    },
-    "Gradient Boosting": {
-      "n_predictions": 1515,
-      "n_repeats": 5,
-      "every_patient_once_per_repeat": true,
-      "probabilities_valid": true,
-      "min_p": 0.008489021609826152,
-      "max_p": 0.9938514665993176
-    },
-    "Logistic Regression": {
-      "n_predictions": 1515,
-      "n_repeats": 5,
-      "every_patient_once_per_repeat": true,
-      "probabilities_valid": true,
-      "min_p": 0.0027861950239408905,
-      "max_p": 0.9997374840663117
     },
     "MLP": {
       "n_predictions": 1515,
       "n_repeats": 5,
       "every_patient_once_per_repeat": true,
       "probabilities_valid": true,
-      "min_p": 0.003082559211179614,
-      "max_p": 0.9966287016868591
+      "min_p": 0.0030825592111796,
+      "max_p": 0.9966287016868592
     },
     "Naive Bayes": {
       "n_predictions": 1515,
@@ -121,22 +61,6 @@
       "probabilities_valid": true,
       "min_p": 6.806862943855599e-05,
       "max_p": 0.9999415221049696
-    },
-    "Random Forest": {
-      "n_predictions": 1515,
-      "n_repeats": 5,
-      "every_patient_once_per_repeat": true,
-      "probabilities_valid": true,
-      "min_p": 0.0,
-      "max_p": 1.0
-    },
-    "SVM": {
-      "n_predictions": 1515,
-      "n_repeats": 5,
-      "every_patient_once_per_repeat": true,
-      "probabilities_valid": true,
-      "min_p": 0.011662111269218622,
-      "max_p": 0.9999814726165236
     },
     "identical_folds_across_models": true
   },

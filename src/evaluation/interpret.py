@@ -1,9 +1,9 @@
-"""Interpretation: out-of-fold feature attribution for models and a BN structure figure.
+"""Interpretation: out-of-fold feature attribution for the MLP and a BN structure figure.
 
     python -m src.evaluation.interpret
 
 Attribution is *descriptive of the fitted model*, not of the patients or of causal
-mechanisms. For each outer fold of repeat 0 models are refitted on the training fold with the
+mechanisms. For each outer fold of repeat 0 the MLP is refitted on the training fold with the
 hyper-parameters selected in that fold during evaluation, then the held-out fold is explained:
   * permutation importance: drop in ROC AUC when one raw predictor is shuffled among held-out rows;
   * SHAP (KernelExplainer, model output = P(disease)) with a training-fold background sample.
@@ -28,7 +28,7 @@ from sklearn.metrics import roc_auc_score
 from src.data.loader import FEATURE_COLUMNS, get_xy, load_cleveland, load_config, resolve
 from src.evaluation.splits import outer_folds
 from src.models.bayesian_network import EDGES, NODES, build_structure
-from src.models.pipelines import build_gb_pipeline, build_mlp_pipeline, build_rf_pipeline
+from src.models.pipelines import build_mlp_pipeline
 
 N_PERM_REPEATS = 30
 N_BACKGROUND = 30
@@ -103,56 +103,6 @@ def plot_attribution(res: dict, cfg: dict) -> list[str]:
     return ["mlp_attribution_bars.png", "mlp_shap_beeswarm.png"]
 
 
-def ensemble_permutation_importance(model_name: str, build_fn, cfg: dict) -> pd.DataFrame:
-    """Compute out-of-fold permutation importance for an ensemble model across repeat-0 outer folds."""
-    X, y = get_xy(load_cleveland(config=cfg))
-    outer = outer_folds(y, cfg)[:cfg["cv"]["outer_folds"]]  # repeat 0
-    rng = np.random.default_rng(cfg["project"]["seed"])
-    perm = []
-    pipe = build_fn(cfg)
-    for f, (tr, va) in enumerate(outer):
-        fitted = clone(pipe).fit(X.iloc[tr], y.iloc[tr])
-        d = permutation_importance_auc(fitted, X.iloc[va], y.iloc[va], rng)
-        d["fold"] = f
-        d["model"] = model_name
-        perm.append(d)
-    df = pd.concat(perm, ignore_index=True)
-    summary = df.groupby(["model", "feature"])["auc_drop"].agg(["mean", "std"]).reset_index()
-    summary = summary.rename(columns={"mean": "perm_auc_drop", "std": "perm_auc_drop_sd"})
-    return summary.sort_values("perm_auc_drop", ascending=False)
-
-
-def run_ensemble_attribution(cfg: dict) -> dict[str, pd.DataFrame]:
-    """Run permutation importance attribution for Random Forest and Gradient Boosting."""
-    rf_perm = ensemble_permutation_importance("Random Forest", build_rf_pipeline, cfg)
-    gb_perm = ensemble_permutation_importance("Gradient Boosting", build_gb_pipeline, cfg)
-    metrics_dir = resolve(cfg["paths"]["metrics"])
-    metrics_dir.mkdir(parents=True, exist_ok=True)
-    rf_perm.to_csv(metrics_dir / "rf_permutation_importance.csv", index=False)
-    gb_perm.to_csv(metrics_dir / "gb_permutation_importance.csv", index=False)
-    return {"Random Forest": rf_perm, "Gradient Boosting": gb_perm}
-
-
-def plot_ensemble_importance(res: dict[str, pd.DataFrame], cfg: dict) -> list[str]:
-    """Generate bar plots comparing feature importance for RF and GB."""
-    fig_dir = resolve(cfg["paths"]["figures"])
-    fig_dir.mkdir(parents=True, exist_ok=True)
-    sns.set_theme(style="whitegrid", context="notebook")
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.8), sharey=True)
-    for ax, (model_name, tab), color_idx in zip(axes, res.items(), [0, 2]):
-        order = tab.sort_values("perm_auc_drop", ascending=False)
-        ax.barh(order["feature"], order["perm_auc_drop"], xerr=order["perm_auc_drop_sd"],
-                color=sns.color_palette("colorblind")[color_idx])
-        ax.set(xlabel="ROC AUC drop when shuffled (mean ± SD)", title=f"{model_name} Permutation Importance")
-        ax.invert_yaxis()
-    fig.suptitle("Ensemble Models Feature Importance (repeat-0 outer folds)", fontsize=11)
-    fig.tight_layout()
-    fig_path = fig_dir / "ensemble_permutation_importance.png"
-    fig.savefig(fig_path, dpi=150)
-    plt.close(fig)
-    return ["ensemble_permutation_importance.png"]
-
-
 def plot_bn_structure(cfg: dict) -> str:
     g = nx.DiGraph(); g.add_nodes_from(NODES)
     kinds = {}
@@ -182,21 +132,14 @@ def plot_bn_structure(cfg: dict) -> str:
 
 def main() -> None:
     cfg = load_config()
-    print("Running ensemble attribution (Random Forest & Gradient Boosting)...", flush=True)
-    ens_res = run_ensemble_attribution(cfg)
-    ens_figs = plot_ensemble_importance(ens_res, cfg)
-    print("Ensemble attribution completed:", ens_figs)
-    try:
-        res = run_attribution(cfg)
-        figs = plot_attribution(res, cfg) + [plot_bn_structure(cfg)]
-        summary = {"max_abs_diff_refit_vs_saved_predictions": res["max_refit_diff"],
-                   "perm_repeats": N_PERM_REPEATS, "shap_background": N_BACKGROUND, "shap_nsamples": N_SHAP_SAMPLES,
-                   "shap_version": shap.__version__, "figures": figs + ens_figs}
-        (resolve(cfg["paths"]["metrics"]) / "mlp_attribution_manifest.json").write_text(json.dumps(summary, indent=2))
-        print(pd.read_csv(resolve(cfg["paths"]["metrics"]) / "mlp_attribution.csv").round(4).to_string(index=False))
-        print(summary)
-    except Exception as e:
-        print(f"Skipping MLP attribution (dependencies/saved predictions not yet generated): {e}")
+    res = run_attribution(cfg)
+    figs = plot_attribution(res, cfg) + [plot_bn_structure(cfg)]
+    summary = {"max_abs_diff_refit_vs_saved_predictions": res["max_refit_diff"],
+               "perm_repeats": N_PERM_REPEATS, "shap_background": N_BACKGROUND, "shap_nsamples": N_SHAP_SAMPLES,
+               "shap_version": shap.__version__, "figures": figs}
+    (resolve(cfg["paths"]["metrics"]) / "mlp_attribution_manifest.json").write_text(json.dumps(summary, indent=2))
+    print(pd.read_csv(resolve(cfg["paths"]["metrics"]) / "mlp_attribution.csv").round(4).to_string(index=False))
+    print(summary)
 
 
 if __name__ == "__main__":
