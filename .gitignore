@@ -27,6 +27,7 @@ credentials*
 data/raw/*
 !data/raw/README.md
 !data/raw/.gitkeep
+!data/raw/processed.cleveland.data
 data/processed/*
 !data/processed/.gitkeep
 
