@@ -1,33 +1,44 @@
-# Heart Disease Risk Modelling via Bayesian Networks and Feed-Forward Neural Networks
+# Heart Disease Risk Modelling: Phase 1
 
-Academic machine learning research that compares three probabilistic classifiers on the UCI Heart Disease (Cleveland) data: a domain-informed **Bayesian network**, a **Naive Bayes** baseline and a small **feed-forward neural network (MLP)**.
+Academic machine-learning project that compares six classifiers on the UCI Heart Disease (Cleveland) data: a domain-informed **Bayesian network**, **Naive Bayes**, **Logistic Regression**, an **SVM**, a **Random Forest** and **Gradient Boosting**.
 
 > **This is not a clinically validated diagnostic system.** It uses 303 patients from one centre, is evaluated only by internal cross-validation, and must not be used for medical decisions.
 
 ## At a glance
-- **Question:** under an identical, leakage-safe nested cross-validation protocol, do a domain-informed Bayesian network, Naive Bayes and a small MLP differ in discrimination and in probability calibration on 303 Cleveland patients?
-- **Ranking:** all three reach ROC AUC of about 0.90-0.91; no paired difference is distinguishable from zero.
-- **Calibration:** the MLP's probabilities are better calibrated; the Bayesian network and Naive Bayes are over-confident (exploratory comparison).
-- **Limits:** one centre, 303 patients, internal validation only; this is not clinical evidence.
-- **Deliverables:** code and tests (`src/`, `tests/`), executed EDA notebook, a Jupyter notebook version of every source file, IEEE-format report (`reports/main.pdf`), 12-slide outline (`reports/presentation_outline.md`) and a Streamlit web interface (`app/`).
+- **Question:** under one identical, leakage-safe nested cross-validation, how well do six classical machine-learning models predict angiographic heart disease, and does the choice of model matter?
+- **Answer:** all six do well (pooled ROC AUC 0.890-0.910, accuracy 81.8%-84.9%). Five cannot be told apart; every paired difference whose 95% interval excludes zero involves Gradient Boosting, which is slightly behind.
+- **What drives the predictions:** `ca` (vessels on fluoroscopy), `thal` (thallium scan) and `cp` (chest pain type), for every model examined.
+- **Limits:** one centre, 303 patients, internal validation only; not clinical evidence.
+- **Deliverables:** code and tests (`src/`, `tests/`), executed EDA notebook, a Jupyter notebook copy of every source file, the project report and slide deck (`reports/`), and a Streamlit web app (`app/`).
 
 ## Contents
-1. [Quick start](#1-quick-start)
-2. [Project layout](#2-project-layout)
-3. [Data](#3-data)
-4. [Methodology](#4-methodology)
-5. [Results](#5-results)
-6. [Interpretation](#6-interpretation)
-7. [Reproducibility](#7-reproducibility)
-8. [Limitations and known issues](#8-limitations-and-known-issues)
-9. [Team plan and Git workflow](#9-team-plan-and-git-workflow)
-10. [Licence, citation and status](#10-licence-citation-and-status)
+1. [Team](#1-team)
+2. [Quick start](#2-quick-start)
+3. [Project layout](#3-project-layout)
+4. [Data](#4-data)
+5. [Methodology](#5-methodology)
+6. [Results](#6-results)
+7. [Feature importance](#7-feature-importance)
+8. [Reproducibility](#8-reproducibility)
+9. [Limitations](#9-limitations)
+10. [Git workflow](#10-git-workflow)
+11. [Licence, citation and deliverables](#11-licence-citation-and-deliverables)
 
 ---
 
-## 1. Quick start
+## 1. Team
 
-Tested on Python 3.9.6 (macOS). Python 3.10+ should work with `pgmpy<1.0` unchanged (untested here).
+| Member | Phase 1 work | Explains in the viva |
+|---|---|---|
+| Hardik | Data loading, verification, EDA and notebook, preprocessing / feature engineering (`src/data/`, `src/features/`, `notebooks/01_eda.ipynb`) | Dataset quality and EDA, feature engineering |
+| Ayush | Bayesian network (structure, conditional probability tables, inference), data splits, metrics, Methods page (`src/models/bayesian_network.py`, `src/evaluation/splits.py`, `metrics.py`, `app/views/methods.py`) | Theoretical rigour (probabilistic graphical models) |
+| Akshith | Logistic Regression and SVM, model pipelines, the script that trains and compares all models (`src/models/pipelines.py`, `src/evaluation/run_evaluation.py`) | Model application (linear and kernel models) |
+| Vansh | Random Forest and Gradient Boosting, hyper-parameter tuning with nested CV, feature importance (`src/evaluation/cv.py`, `src/evaluation/interpret.py`) | Model application (ensembles), tuning |
+| Kabir | Naive Bayes, the web app adapted to the ML models (`src/models/naive_bayes.py`, `app/`, `src/webapp/`) | Model application, demo |
+
+## 2. Quick start
+
+Tested on Python 3.9.6 (macOS).
 
 ```bash
 # 1. environment (exact tested versions)
@@ -38,55 +49,41 @@ pip install -r requirements-lock.txt        # or: pip install -r requirements.tx
 python -m src.data.verify                   # lists the archive, extracts processed.cleveland.data, validates it
 
 # 3. run everything, in this order
-python -m src.data.eda                      # exploratory audit + figures        (seconds)
-python -m src.evaluation.run_evaluation     # nested CV, metrics, figures        (about 30 min on a laptop CPU, measured once)
-python -m src.evaluation.interpret          # SHAP / permutation importance, BN figure (~35 s; needs the step above)
-python -m pytest -q                         # 135 tests; result-dependent tests skip if step 3 has not been run
-python -m src.evaluation.make_report_assets # report tables, figures, number macros, presentation outline
-python -m src.evaluation.audit_report       # consistency audit: results vs report/README/tables/figures/outline
-streamlit run app/streamlit_app.py          # web interface (needs steps 2-3 above); see app/README.md
+python -m src.data.eda                      # exploratory analysis + figures            (seconds)
+python -m src.evaluation.run_evaluation     # nested CV for all six models, metrics, figures (about 10 min)
+python -m src.evaluation.interpret          # feature importance + Bayesian-network figure  (about 1 min)
+python -m pytest -q                         # all tests; result-dependent tests skip if step 3 has not been run
+streamlit run app/streamlit_app.py          # web app, http://localhost:8501 (see app/README.md)
 
 # optional
-python -m src.evaluation.run_evaluation --analyse   # recompute tables/figures from saved out-of-fold predictions
-python -m src.models.learning_curves        # MLP learning curves (report Fig. 3)
-jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb   # run from the project root
+python -m src.evaluation.run_evaluation --analyse   # recompute tables/figures from the saved predictions
 python tools/py_to_notebooks.py             # regenerate the .ipynb copies after editing any .py file
-python tools/run_notebooks.py               # execute every notebook and report failures (rewrites results/, like the scripts)
+python tools/run_notebooks.py               # execute every notebook and report failures
 ```
 
-If `.venv` was copied from another machine or folder, its launcher scripts (`streamlit`, `pytest`, `jupyter`) still point at the old path and fail with "bad interpreter". Recreate it with step 1, or call the tools through the environment's Python: `.venv/bin/python -m streamlit run app/streamlit_app.py`.
+If `.venv` was copied from another machine or folder, its launcher scripts (`streamlit`, `pytest`) still point at the old path. Recreate it, or call the tools through the environment's Python: `.venv/bin/python -m streamlit run app/streamlit_app.py`.
 
-### Notebooks
-Every non-empty `.py` file in `app/`, `src/` and `tests/` has a Jupyter notebook next to it with the same name (for example `src/models/naive_bayes.ipynb`). The `.py` files remain the source of truth: the web app, the tests and the `python -m src...` commands import them, so do not delete them. The notebooks are generated by `tools/py_to_notebooks.py`:
-- a title cell (path and module description), then a setup cell that moves to the project root and puts it on `sys.path`, so a notebook runs wherever Jupyter was started;
-- one cell for the imports and one cell per top-level function or class; code is otherwise unchanged, except that `Path(__file__)...` becomes `Path.cwd()` (a notebook has no `__file__`);
-- `src/evaluation/run_evaluation.ipynb` ends with a `MODE` switch that defaults to `None` (do nothing), so *Run All* cannot start the 30-minute nested CV by accident; set it to `"analyse"` (fast, recompute from saved predictions) or `"full"`. `src/evaluation/audit_report.ipynb` prints the exit code instead of calling `sys.exit`.
+**Notebooks.** Every non-empty `.py` file in `app/`, `src/` and `tests/` has a generated Jupyter notebook next to it with the same name. The `.py` files are the source of truth (the app, tests and commands import them). `src/evaluation/run_evaluation.ipynb` ends with a `MODE` switch that defaults to `None`, so *Run All* cannot start the full evaluation by accident.
 
-Running a script-style notebook (`verify`, `eda`, `interpret`, `learning_curves`, `make_report_assets`, `audit_report`) does what the matching `python -m` command does, including rewriting its outputs. Test notebooks only define the test functions; run the tests with `pytest`. `pip install jupyterlab` to open notebooks interactively (`.venv/bin/jupyter lab`).
-
-## 2. Project layout
+## 3. Project layout
 
 ```
-config.yaml              seeds, CV design, feature groups, model and tuning settings (single source of truth)
+config.yaml              seeds, CV design, feature groups, model settings and tuning grids (single source of truth)
 requirements.txt         minimum versions        requirements-lock.txt   exact tested versions
-data/raw/                original archive (not committed; see data/raw/README.md)    data/processed/  (empty; no derived data needed)
+data/raw/                original archive (not committed; see data/raw/README.md)
 notebooks/01_eda.ipynb   executed EDA notebook
-*.ipynb next to .py      generated notebook copy of each source/test file (see "Notebooks" in Section 1)
-tools/                   py_to_notebooks.py (generate the notebooks), run_notebooks.py (execute them all)
 src/data/                loader.py (loading, target mapping), verify.py, eda.py
-src/features/            preprocessing.py (leakage-safe pipelines)
-src/models/              bayesian_network.py, naive_bayes.py, mlp.py, pipelines.py, learning_curves.py
-src/evaluation/          splits.py (shared folds), cv.py (nested CV), metrics.py, run_evaluation.py,
-                         curves.py, interpret.py (attribution, BN figure), make_report_assets.py, audit_report.py
-app/                     Streamlit web interface (streamlit_app.py, views/); design and research notes in app/README.md
-src/webapp/              interface logic (validation, final demo models, results loading); .streamlit/config.toml
-tests/                   135 tests (unit + integration + headless UI)
+src/features/            preprocessing.py (leakage-safe numeric and discrete pipelines)
+src/models/              bayesian_network.py, naive_bayes.py, pipelines.py (all six models)
+src/evaluation/          splits.py (shared folds), cv.py (nested CV), metrics.py, run_evaluation.py, interpret.py
+app/, src/webapp/        Streamlit web app and its logic; .streamlit/config.toml
+tests/                   unit, integration and headless web-app tests
 results/metrics/         CSV/JSON outputs        results/figures/   plots
-reports/                 IEEE LaTeX report (main.tex, references.bib, main.pdf), generated tables/ and figures/,
-                         presentation_outline.md, README.md (build instructions)
+reports/                 project report (Word) and presentation (PowerPoint)
+tools/                   py_to_notebooks.py, run_notebooks.py
 ```
 
-## 3. Data
+## 4. Data
 
 **Source.** UCI Machine Learning Repository, *Heart Disease* (https://archive.ics.uci.edu/dataset/45/heart+disease), archive `heart+disease.zip` (23 files, documented in `heart-disease.names`). Primary file: `processed.cleveland.data`. The Hungarian, Switzerland and VA files are **not** used. The archive's own `WARNING` file says `cleveland.data` is corrupted and `processed.cleveland.data` is the usable one. Hashes, licence and citation are in `data/raw/README.md`.
 
@@ -98,9 +95,9 @@ reports/                 IEEE LaTeX report (main.tex, references.bib, main.pdf),
 
 **EDA summary** (`notebooks/01_eda.ipynb`, descriptive only): no invalid or implausible values; binary target close to balanced; only one predictor pair has |Spearman| >= 0.5 (`oldpeak`-`slope`, 0.595); sparse levels (`restecg = 1`: 4 rows, `thal = 6`: 18, `ca = 3`: 20, `slope = 3`: 21, `cp = 1`: 23); `cp = 4` (asymptomatic) has the highest positive rate (0.729), which probably reflects referral into angiography. `ca`, `thal`, `oldpeak`, `slope`, `exang`, `thalach` come from exercise/imaging work-ups, so performance would not transfer to initial triage. Correlation is not causation: confounding, selection and reverse relationships all produce the same patterns.
 
-## 4. Methodology
+## 5. Methodology
 
-### 4.1 Feature types and preprocessing (`src/features/preprocessing.py`)
+### 5.1 Preprocessing (`src/features/preprocessing.py`)
 
 | Type | Features |
 |---|---|
@@ -111,16 +108,14 @@ reports/                 IEEE LaTeX report (main.tex, references.bib, main.pdf),
 
 Both pipelines start with a guard that raises if `num` or `target` is passed as a predictor.
 
-- **MLP:** median/mode imputation, standardisation of continuous and ordinal features, one-hot nominal features (unseen category -> all zeros). 20 named output columns.
-- **BN / Naive Bayes:** continuous features are cut into train-fold tertiles, everything is integer-coded from the training vocabulary; missing or unseen values become the training mode. 13 integer columns.
+- **Numeric pipeline (Logistic Regression, SVM, Random Forest, Gradient Boosting):** median / most-frequent imputation, standardisation of continuous and ordinal features, one-hot nominal features (unseen category -> all zeros). 20 columns.
+- **Discrete pipeline (Bayesian network, Naive Bayes):** continuous features cut into train-fold tertiles, everything integer-coded from the training categories; missing or unseen values become the training mode. 13 columns.
 
-*Why they differ:* the MLP needs numeric, comparably scaled inputs; the BN and Naive Bayes estimate discrete conditional probability tables and need finite state spaces. All data-dependent quantities (imputation values, scaling statistics, categories, bin edges) are learned in `fit` on the training fold only; the evaluation clones and refits the whole pipeline in every fold, inner and outer.
+All data-dependent quantities are learned in `fit` on the training fold only; the evaluation refits the whole pipeline in every inner and outer fold.
 
-### 4.2 Models
+### 5.2 Models
 
-**Bayesian network** (`src/models/bayesian_network.py`, pgmpy 0.1.26). 14 nodes (13 predictors + `target`), 16 edges, a *domain-informed assumption* fixed before any evaluation. Only the conditional probability tables are estimated, from the training fold, with a Dirichlet prior (pseudo-count tuned in the inner loop). Inference is exact variable elimination given all 13 predictors. A missing value raises `ValueError` by default (`marginalize` option available), a state outside the trained range always raises, and inference failures are never suppressed. Figure: `results/figures/bn_structure.png`.
-
-Direction convention: risk factors -> disease -> manifestations. The structure is an assumption about how findings arise; it is **not** learned from data and is **not** evidence of causation. The edges are:
+**Bayesian network** (`src/models/bayesian_network.py`, pgmpy 0.1.26): 14 nodes, 16 edges fixed before any evaluation (risk factors -> disease -> findings). Only the conditional probability tables are learned, with a Dirichlet prior (pseudo-count tuned). Inference is exact variable elimination. A missing value or an unseen state raises an error. Figure: `results/figures/bn_structure.png`.
 
 | Edge | Kind | Rationale |
 |---|---|---|
@@ -141,170 +136,121 @@ Direction convention: risk factors -> disease -> manifestations. The structure i
 | target -> slope | domain | Peak-exercise ST slope is a diagnostic sign of ischaemia. |
 | oldpeak -> slope | modelling | Both measure the exercise ST response (strongest predictor pair in EDA, Spearman 0.6). |
 
-Kinds: *domain* = clinical reasoning taken as an assumption (not established from this data), *weak* = plausible but weakly motivated, *modelling* = added to relax Naive Bayes independence. The `oldpeak -> slope` edge was suggested by the exploratory analysis of the full sample, so the structure is not entirely independent of the data. `target` has three parents (18 parent configurations, about 13 training rows each). Most predictors appear only as children of `target`, so the network encodes a Naive-Bayes-like core with a few extra dependencies; it is *not* a causal model, and it says nothing about what would happen if a variable were changed.
+Kinds: *domain* = clinical reasoning taken as an assumption, *weak* = plausible but weakly motivated, *modelling* = added to relax Naive Bayes independence. The `oldpeak -> slope` edge was suggested by the exploratory analysis. The structure is **not** a causal model.
 
-**Naive Bayes** (`src/models/naive_bayes.py`): `CategoricalNB` on the same discretised inputs, Laplace smoothing tuned in the inner loop. Assumes all predictors are conditionally independent given the class; this is violated (e.g. oldpeak/slope, cp/exang, thalach/age), which typically produces over-confident probabilities.
+**Naive Bayes** (`src/models/naive_bayes.py`): `CategoricalNB` on the same discrete inputs; Laplace smoothing tuned.
 
-**MLP** (`src/models/mlp.py`, PyTorch 2.8.0): 20 inputs -> Linear(16) -> ReLU -> Dropout -> Linear(8) -> ReLU -> Dropout -> Linear(1); 481 parameters; `BCEWithLogitsLoss`; Adam (lr 1e-3, mini-batches of 32, max 300 epochs). Early stopping on a stratified 20% hold-out of the *training fold* (patience 20, min delta 1e-4, best-epoch weights restored). The hidden sizes, learning rate and stopping rule were fixed a priori; weight decay and dropout are tuned in the inner loop. Positive class = 1 for every model; `predict_proba` returns `[P(0), P(1)]`.
+**Logistic Regression** and **SVM** (`src/models/pipelines.py`): L2-regularised logistic regression (C tuned); RBF-kernel SVM (C and gamma tuned) with Platt scaling for probabilities.
 
-### 4.3 Evaluation design (`src/evaluation/`)
+**Random Forest** and **Gradient Boosting** (`src/models/pipelines.py`): scikit-learn ensembles; number of trees, depth and (for boosting) learning rate tuned.
 
-- **Outer CV:** 5-fold stratified x 5 repeats = 25 identical outer folds for every model (seed 42; fold hash `3ece83bae3e0a960` in `evaluation_manifest.json`). The 5 repeats were chosen *before* looking at any result, because one 5-fold split of 303 rows is noisy.
-- **Nested tuning:** inside each outer training fold, stratified 5-fold inner CV over a small grid, selected by inner out-of-fold **log loss**: Naive Bayes `alpha` in {0.5, 1, 2}; BN `pseudo_count` in {0.5, 1, 2}; MLP `weight_decay` in {1e-3, 1e-2} x `dropout` in {0.3, 0.5}. The best setting is refitted on the whole outer training fold. Outer validation labels are used only to score predictions afterwards (a test confirms, for the Naive Bayes and BN pipelines, that flipping them leaves every prediction and threshold unchanged; the MLP uses the same evaluation code but is not covered by that test).
-- **Threshold:** hard-label metrics use a fixed threshold of **0.5** (primary, fixed a priori). A secondary threshold maximising sensitivity + specificity - 1 (Youden) is computed from the *inner out-of-fold predictions of the training fold only*.
-- **Metrics:** ROC AUC, PR AUC (average precision), sensitivity, specificity, precision, F1, confusion matrix, Brier score, log loss, ECE (10 equal-width bins), calibration slope/intercept, reliability curves (decile bins).
-- **Uncertainty:** mean ± SD over the 25 outer folds; pooled out-of-fold metrics per repeat (mean ± SD over repeats); 2000-sample patient-level paired percentile bootstrap (95%) for pooled metrics and between-model differences.
-- **Integrity checks** (run on every evaluation): every patient predicted exactly once per repeat, probabilities finite and in [0, 1], `P(0) + P(1) = 1`, labels aligned, identical fold membership across models.
+### 5.3 Evaluation design (`src/evaluation/`)
 
-Outputs: `results/metrics/` (`oof_predictions.csv`, `fold_metrics.csv`, `summary_fold_level.csv`, `summary_pooled_repeats.csv`, `pooled_metrics_by_repeat.csv`, `bootstrap_ci.csv`, `bootstrap_paired_differences.csv`, `selected_hyperparameters.csv`, `evaluation_manifest.json`, ...) and `results/figures/` (`roc_curves`, `pr_curves`, `confusion_matrices`, `calibration_curves`, `mlp_learning_curves`, attribution and structure figures). `reports/tables/model_comparison_fold_level.csv` holds a compact table.
+- **Outer CV:** 5-fold stratified x 5 repeats = 25 identical outer folds for every model (seed 42).
+- **Nested tuning:** inside each outer training fold, a stratified 5-fold inner CV over the grid below, selected by inner out-of-fold log loss; the best setting is refitted on the whole outer training fold. Outer labels are used only for scoring.
+- **Threshold:** 0.5, fixed in advance.
+- **Metrics:** accuracy, ROC AUC, PR AUC, sensitivity, specificity, precision, F1, confusion matrix, Brier score.
+- **Uncertainty:** mean ± SD over the 25 folds; 2000-sample patient-level paired bootstrap (95%) for pooled metrics and differences between models.
+- **Integrity checks** (every run): each patient predicted exactly once per repeat, valid probabilities, identical folds across models.
 
-## 5. Results
+| Model | Grid | Chosen most often |
+|---|---|---|
+| Bayesian network | `pseudo_count` 0.5, 1, 2, 5, 10 | pseudo_count = 10 (25/25) |
+| Naive Bayes | `alpha` 0.5, 1, 2, 5, 10 | alpha = 10 (25/25) |
+| Logistic Regression | `C` 0.01, 0.1, 1, 10 | C = 1 (14/25) |
+| SVM | `C` 0.1, 1, 10; `gamma` scale, 0.01 | C = 1, gamma = 0.01 (23/25) |
+| Random Forest | `n_estimators` 200, 500; `max_depth` 3, 5, None | n_estimators = 200, max_depth = 5 (8/25) |
+| Gradient Boosting | `learning_rate` 0.05, 0.1; `n_estimators` 100, 200; `max_depth` 2, 3 | learning_rate = 0.05, n_estimators = 100, max_depth = 2 (20/25) |
 
-All numbers below come from `results/metrics/*.csv` (25 outer folds per model; threshold 0.5 unless stated). Nothing here was tuned against outer-fold results.
+The Bayesian network and Naive Bayes chose the largest smoothing value in every fold. Their grids had already been widened from {0.5, 1, 2} for this run because an earlier run also chose its top value; they were not widened again after seeing these results (see Limitations).
+
+## 6. Results
+
+All numbers come from `results/metrics/*.csv` (threshold 0.5).
 
 **Fold-level mean ± SD (25 outer folds, about 60 patients each)**
 
-| Model | ROC AUC | PR AUC | Sensitivity | Specificity | Precision | F1 | Brier | Log loss |
-|---|---|---|---|---|---|---|---|---|
-| Bayesian Network | 0.912 ± 0.036 | 0.911 ± 0.037 | 0.787 ± 0.083 | 0.848 ± 0.065 | 0.818 ± 0.066 | 0.799 ± 0.054 | 0.127 ± 0.030 | 0.417 ± 0.106 |
-| Naive Bayes | 0.907 ± 0.033 | 0.907 ± 0.035 | 0.803 ± 0.090 | 0.850 ± 0.068 | 0.825 ± 0.072 | 0.810 ± 0.056 | 0.134 ± 0.031 | 0.465 ± 0.109 |
-| MLP | 0.907 ± 0.037 | 0.905 ± 0.040 | 0.803 ± 0.080 | 0.865 ± 0.059 | 0.837 ± 0.067 | 0.817 ± 0.059 | 0.121 ± 0.025 | 0.391 ± 0.064 |
+| Model | Accuracy | ROC AUC | Sensitivity | Specificity | Precision | F1 | Brier |
+|---|---|---|---|---|---|---|---|
+| Bayesian network | 0.829 ± 0.050 | 0.912 ± 0.036 | 0.793 ± 0.077 | 0.861 ± 0.068 | 0.833 ± 0.070 | 0.810 ± 0.057 | 0.121 ± 0.027 |
+| Naive Bayes | 0.828 ± 0.049 | 0.907 ± 0.034 | 0.794 ± 0.088 | 0.857 ± 0.067 | 0.830 ± 0.072 | 0.808 ± 0.058 | 0.129 ± 0.028 |
+| Logistic Regression | 0.847 ± 0.045 | 0.911 ± 0.036 | 0.780 ± 0.072 | 0.905 ± 0.057 | 0.878 ± 0.066 | 0.823 ± 0.054 | 0.120 ± 0.023 |
+| SVM | 0.849 ± 0.046 | 0.910 ± 0.037 | 0.790 ± 0.078 | 0.899 ± 0.056 | 0.872 ± 0.066 | 0.826 ± 0.056 | 0.119 ± 0.026 |
+| Random Forest | 0.834 ± 0.048 | 0.906 ± 0.037 | 0.778 ± 0.080 | 0.882 ± 0.053 | 0.850 ± 0.062 | 0.810 ± 0.059 | 0.126 ± 0.020 |
+| Gradient Boosting | 0.818 ± 0.044 | 0.895 ± 0.047 | 0.772 ± 0.074 | 0.857 ± 0.056 | 0.824 ± 0.059 | 0.795 ± 0.052 | 0.131 ± 0.029 |
 
-**Pooled out-of-fold, with patient-level bootstrap 95% CI** (mean of the 5 repeats' pooled predictions)
+**Pooled out-of-fold, with patient-level bootstrap 95% CI**
 
-| Model | ROC AUC | PR AUC | Brier |
+| Model | Accuracy | ROC AUC | Brier |
 |---|---|---|---|
-| Bayesian Network | 0.909 [0.873, 0.939] | 0.905 [0.860, 0.939] | 0.127 [0.099, 0.157] |
-| Naive Bayes | 0.904 [0.869, 0.935] | 0.900 [0.853, 0.936] | 0.134 [0.105, 0.166] |
-| MLP | 0.903 [0.868, 0.936] | 0.895 [0.851, 0.933] | 0.121 [0.099, 0.144] |
+| Bayesian network | 0.830 [0.785, 0.869] | 0.910 [0.876, 0.940] | 0.121 [0.096, 0.148] |
+| Naive Bayes | 0.828 [0.785, 0.867] | 0.905 [0.870, 0.935] | 0.129 [0.102, 0.159] |
+| Logistic Regression | 0.848 [0.809, 0.885] | 0.904 [0.869, 0.936] | 0.120 [0.097, 0.143] |
+| SVM | 0.849 [0.809, 0.886] | 0.907 [0.873, 0.939] | 0.119 [0.096, 0.142] |
+| Random Forest | 0.834 [0.793, 0.872] | 0.903 [0.868, 0.934] | 0.126 [0.107, 0.147] |
+| Gradient Boosting | 0.818 [0.778, 0.857] | 0.890 [0.853, 0.923] | 0.131 [0.109, 0.155] |
 
-**Calibration** (pooled out-of-fold per repeat, mean ± SD over 5 repeats; slope 1 and intercept 0 are ideal, slope < 1 means over-confident)
+**Mean confusion counts per repeat** (303 patients), TN / FP / FN / TP: Bayesian network 141.2 / 22.8 / 28.8 / 110.2; Naive Bayes 140.6 / 23.4 / 28.6 / 110.4; Logistic Regression 148.4 / 15.6 / 30.6 / 108.4; SVM 147.4 / 16.6 / 29.2 / 109.8; Random Forest 144.6 / 19.4 / 30.8 / 108.2; Gradient Boosting 140.6 / 23.4 / 31.6 / 107.4.
 
-| Model | ECE | Calibration slope | Calibration intercept |
-|---|---|---|---|
-| Bayesian Network | 0.082 ± 0.003 | 0.62 ± 0.01 | -0.06 ± 0.03 |
-| Naive Bayes | 0.101 ± 0.010 | 0.51 ± 0.00 | -0.05 ± 0.02 |
-| MLP | 0.059 ± 0.009 | 1.10 ± 0.05 | 0.09 ± 0.10 |
+**Paired comparisons.** 12 of 15 ROC AUC differences and 12 of 15 accuracy differences have a 95% interval that includes zero. The ones that do not:
 
-**Mean confusion counts per repeat** (303 patients, threshold 0.5), TN / FP / FN / TP: BN 139.0 / 25.0 / 29.6 / 109.4; Naive Bayes 139.4 / 24.6 / 27.4 / 111.6; MLP 141.8 / 22.2 / 27.4 / 111.6.
-
-**Paired bootstrap differences** (95% CI; see `bootstrap_paired_differences.csv`): ROC AUC and PR AUC differences between any two models are within about ±0.01 and every interval includes 0 (e.g. BN - MLP ROC AUC +0.005 [-0.012, 0.021]). Brier intervals all include 0. Log-loss intervals exclude 0 for Naive Bayes - MLP (+0.073 [0.007, 0.145]) and BN - Naive Bayes (-0.048 [-0.081, -0.018]) but include 0 for BN - MLP (+0.025 [-0.027, 0.080]).
-
-**Youden threshold (secondary, selected on training data).** It moved sensitivity/specificity to 0.767/0.851 (BN), 0.786/0.851 (NB) and 0.780/0.890 (MLP). It did not improve sensitivity for any model. The selected thresholds averaged 0.52 to 0.55 but ranged from 0.21 to 0.80 across folds, i.e. they are unstable at this sample size. 0.5 remains the reported threshold.
-
-**Selected hyperparameters** (`selected_hyperparameters.csv`): BN `pseudo_count` = 2.0 and Naive Bayes `alpha` = 2.0 in **all 25 folds** (the top of their grids); MLP chose `weight_decay` 0.01 in 16 folds and 0.001 in 9, `dropout` 0.5 in 14 and 0.3 in 11.
-
-## 6. Interpretation
-
-**Ranking performance is indistinguishable.** All three models reach ROC AUC and PR AUC of about 0.90-0.91. The differences between them (at most 0.01) are far smaller than the uncertainty: fold-level SDs are 0.03-0.04 and the bootstrap 95% intervals are about ±0.03, and every paired AUC/PR-AUC interval includes zero. The data give **no evidence that one model ranks patients better**, and the nominally highest AUC (Bayesian network) should not be read as superiority. The MLP, with 481 parameters for about 240 training rows, did not beat the simple probabilistic models, which is unsurprising on a small tabular dataset with a handful of strong predictors.
-
-**Probability quality differs more than ranking.** The MLP has the lowest Brier score, log loss and ECE and a calibration slope of 1.10 (close to ideal, slightly under-confident), whereas the Bayesian network (0.62) and Naive Bayes (0.51) are over-confident: they push most predictions close to 0 or 1 (30-31% of out-of-fold predictions are >= 0.9 and 37-40% are <= 0.1, versus 9% and 23% for the MLP; see `calibration_curves.png`) and the extremes are not as certain as claimed: among predictions >= 0.9 the observed positive rate is 0.946 (BN) and 0.924 (NB) against mean predictions of 0.979 and 0.983, and among predictions <= 0.1 it is 0.092 (BN) and 0.110 (NB) against 0.025 and 0.020. For the MLP the corresponding rates are 0.979 vs 0.937 and 0.037 vs 0.055. Naive Bayes is worst, consistent with its violated independence assumption; the BN's few extra edges help only partly. Only the log-loss differences exclude zero in the paired bootstrap, the Brier differences do not, and these are exploratory comparisons of many metrics without multiplicity correction. The calibration finding should therefore be treated as suggestive.
-
-**Hard-label metrics.** At threshold 0.5 sensitivity is 0.79-0.80 and specificity 0.85-0.87 for all models; per-fold SDs of 0.06-0.09 correspond to only about 5 patients per fold of 60. Roughly 27-30 of the 139 diseased patients are missed (false negatives) per repeat, which would be a serious weakness in any screening setting. Threshold tuning on training data did not help.
-
-**Class imbalance** is mild (45.9% positive; prevalence is the PR-curve baseline), PR AUC tracks ROC AUC, and no resampling or class weights were used. The five-level severity labels were collapsed, so nothing is learned about severity.
-
-**Uncertainty caveats.** The SD over the 25 folds understates uncertainty about future patients, because training sets overlap. The tiny SD over the 5 repeats (about 0.002 in AUC) only reflects how the fold split is drawn and not sampling variability of the 303 patients; the bootstrap interval is the more honest summary. The bootstrap resamples patients but not the training procedure.
-
-**Tuning caveat (unresolved).** BN and Naive Bayes always selected the largest smoothing value in the grid, so the grid was too narrow at its upper end and their probabilities might be less over-confident with stronger smoothing. I did **not** widen the grid after seeing the outer-fold results, to avoid a researcher-degree-of-freedom; doing so is a legitimate next experiment but should be pre-declared and rerun end to end.
-
-**Bayesian network structure.** Because the edge directions are assumptions, a good fit does not support the causal story. Conversely, the roughly equal AUC of the BN and the Naive Bayes baseline means this particular choice of extra edges did not measurably improve ranking; the structure could be wrong in ways this data cannot reveal.
-
-**Feature attribution for the MLP** (`python -m src.evaluation.interpret`; `mlp_attribution_bars.png`, `mlp_shap_beeswarm.png`, `mlp_attribution.csv`). For the five repeat-0 outer folds, each MLP was refitted with the hyperparameters selected in that fold (the refit reproduced the saved evaluation predictions to 1e-16), and the held-out rows were explained at the level of the 13 raw predictors with SHAP (`KernelExplainer`, 30 background rows, 500 coalition samples, model output = P(disease)) and with permutation importance (30 shuffles, drop in ROC AUC).
-
-| Feature | mean abs SHAP | ROC AUC drop (mean ± SD over 5 folds) |
+| Comparison | Metric | Difference [95% CI] |
 |---|---|---|
-| ca | 0.104 | 0.054 ± 0.017 |
-| cp | 0.089 | 0.035 ± 0.014 |
-| thal | 0.085 | 0.028 ± 0.013 |
-| oldpeak | 0.055 | 0.010 ± 0.014 |
-| slope | 0.044 | 0.002 ± 0.004 |
-| trestbps | 0.039 | 0.005 ± 0.013 |
-| thalach | 0.038 | 0.006 ± 0.003 |
-| sex | 0.024 | 0.006 ± 0.008 |
-| exang | 0.024 | 0.004 ± 0.001 |
-| restecg | 0.022 | 0.001 ± 0.003 |
-| chol | 0.011 | -0.002 ± 0.002 |
-| age | 0.005 | 0.001 ± 0.003 |
-| fbs | 0.002 | -0.002 ± 0.003 |
+| Bayesian Network - Gradient Boosting | ROC AUC | +0.020 [+0.003, +0.036] |
+| Logistic Regression - Gradient Boosting | accuracy | +0.029 [+0.005, +0.052] |
+| SVM - Gradient Boosting | accuracy | +0.030 [+0.007, +0.053] |
+| SVM - Gradient Boosting | ROC AUC | +0.017 [+0.001, +0.032] |
+| Random Forest - Gradient Boosting | accuracy | +0.016 [+0.001, +0.031] |
+| Random Forest - Gradient Boosting | ROC AUC | +0.013 [+0.003, +0.023] |
 
-Both methods agree that `ca`, `cp` and `thal` carry most of the MLP's predictive signal, followed by `oldpeak`; `fbs`, `chol` and `age` contribute little. *Limitations:* attribution describes **this fitted model on this sample**, not mechanisms in patients, and does not establish causality or a clinical effect; correlated predictors share or hide credit (a low rank for `age` does not mean age is irrelevant, since `ca` and `thalach` partly encode it); folds hold only about 60 rows so the permutation SDs are large (several bars have an interval spanning 0); `KernelExplainer` is a sampling approximation and background rows with missing `ca`/`thal` are imputed by the pipeline; the three leading features come from invasive or specialist tests, so a model relying on them is not a triage tool; the ranking is not a feature-selection result and was not used to change any model.
+All of them involve Gradient Boosting, so the other five models cannot be told apart. With 30 intervals examined, this is modest evidence, not proof.
 
-## 7. Reproducibility
+## 7. Feature importance
 
-**Seeds.** One project seed (`project.seed = 42` in `config.yaml`) drives: outer folds (`RepeatedStratifiedKFold`), inner folds (`seed + outer fold id`), MLP initialisation, batch order and inner early-stopping split, the bootstrap generator, the permutation generator and the SHAP background sample (`seed + fold`). Same seed + same package versions on CPU gives bit-identical predictions in the tests.
+`python -m src.evaluation.interpret` refits Logistic Regression, Random Forest and Gradient Boosting on the five repeat-0 outer folds (with the hyper-parameters selected in each fold; the refits reproduce the saved predictions exactly) and measures **permutation importance**: the drop in ROC AUC on the held-out patients when one predictor is shuffled (30 shuffles). Outputs: `results/metrics/feature_importance.csv`, `results/figures/feature_importance.png`.
 
-**Versions** (`requirements-lock.txt`; also written into `results/metrics/evaluation_manifest.json`): Python 3.9.6, numpy 2.0.2, pandas 2.3.3, scipy 1.13.1, scikit-learn 1.6.1, pgmpy 0.1.26, networkx 3.2.1, torch 2.8.0, shap 0.49.1, matplotlib 3.9.4, seaborn 0.13.2, PyYAML 6.0.3, pytest 8.4.2.
-
-**Verification performed.**
-Executed on 2026-10-22 on this machine (macOS, CPU):
-- **Tests:** `python -m pytest -q` -> **96 passed**, 0 failed, in the project environment and again in the clean environment below. The suite includes re-running nested CV for outer fold 7 for all three models and checking it equals the saved predictions.
-- **Clean-environment rebuild:** a copy of the project *without* `.venv`, results, figures, tables or extracted data, containing only the code, configs and the original `heart+disease.zip`, was run in a fresh virtual environment installed from `requirements-lock.txt` (Python 3.9.6). `python -m src.data.verify`, `src.data.eda`, `src.evaluation.run_evaluation` (about 29.6 min) and `src.evaluation.interpret` all exited 0, and the then-current suite of 96 tests passed.
-- **Result:** the out-of-fold predictions (`oof_predictions.csv`, max difference 0.0), selected hyperparameters, fold-level and pooled summaries, bootstrap CIs and paired differences, `outer_folds.json` and `data_verification.json` were **byte-identical** to the originals; fold hash `3ece83bae3e0a960` and package versions matched. The SHAP/permutation outputs were byte-identical after a fix (below).
-- **A reproducibility bug was found and fixed:** the first clean rebuild gave SHAP values that differed from the original (up to 0.006) because `KernelExplainer` draws coalitions from NumPy's unseeded global RNG. `interpret.py` now seeds it per fold; after the fix the project and clean-environment attribution files are byte-identical. The seeded values differ from the unseeded run by at most 0.0004; no conclusion changed.
-- **Re-check on 2026-10-23** (same machine, after adding the notebooks): `python -m pytest -q` -> 135 passed; `pyflakes app src tests` clean; `python -m src.evaluation.audit_report` -> 28/28 checks passed. All five web pages were opened in a browser with no errors, including an estimate with the three models and the SHAP explanation. `python tools/run_notebooks.py` on a copy of the project executed all 37 notebooks (36 generated + `01_eda`) with 0 failures, each started from its own folder; outputs were not compared cell by cell. The copied `.venv` launcher scripts were repointed to this folder (see Section 1).
-- **Not verified:** other operating systems, other Python versions (including Python >= 3.10 and pgmpy 1.x), GPUs, or other CPU architectures. The EDA notebook was re-executed from the project root with `jupyter nbconvert` (it ran without error) but its outputs were not compared cell by cell. `python -m src.models.learning_curves` (report Fig. 3) was not part of the clean rebuild.
-
-## 8. Limitations and known issues
-
-**Data and design**
-- Only 303 patients, one centre, one period; no external validation. Internal cross-validation cannot support clinical validity or generalisability.
-- Referral and selection bias: all patients were assessed for coronary disease; prevalence (45.9%) is not a population rate, and the high positive rate for asymptomatic chest pain probably reflects referral.
-- Predictors include results of exercise testing, fluoroscopy and perfusion imaging, so the models are not applicable to first-contact triage.
-- The binary target pools `num` 1-4; severity is discarded. Sparse categories (`restecg = 1`, `thal = 6`, `ca = 3`) make table estimates unstable. 206 men vs 97 women limits subgroup conclusions; no fairness analysis was done.
-- Six rows with missing `ca`/`thal` are filled with the training mode, ignoring uncertainty.
-- Differences between models are within noise; 36 bootstrap intervals were examined without multiplicity correction.
-
-**Methodological**
-- BN/NB smoothing hit the edge of its grid in every fold (see Section 6); not revisited to avoid outer-fold-informed changes.
-- The BN structure is an a-priori assumption; the `oldpeak -> slope` edge was suggested by the EDA on the full sample.
-- MLP preprocessing is fitted on the whole training fold, so inner early-stopping rows influenced scaling statistics (not weights).
-- Attribution results are model descriptions, not causal findings.
-
-**Software**
-- pgmpy is pinned below 1.0 because 1.0 requires Python >= 3.10 and renames `BayesianNetwork` to `DiscreteBayesianNetwork` (one-line change).
-- Python 3.9 is past end of life; importing pgmpy emits Google-library `FutureWarning`s about it (harmless, third-party). Python 3.12 from Homebrew could not be used here because `platform.mac_ver()` returns empty on this macOS and breaks pip's bootstrap.
-- The notebooks next to the `.py` files are generated copies and do not update themselves: after editing a `.py` file, run `python tools/py_to_notebooks.py`, or the two will differ.
-- Exact floating-point reproducibility across different devices/OS/PyTorch builds is not guaranteed.
-- The author/team fields in `reports/main.tex`, the slide deck and the project report are placeholders for the team to fill in.
-
-## 9. Team plan and Git workflow
-
-**Suggested roles for five members** (each owns code, tests and a README section; every pull request gets one reviewer from a different role):
-
-| # | Role | Owns | Main deliverables |
+| Rank | Logistic Regression | Random Forest | Gradient Boosting |
 |---|---|---|---|
-| 1 | Data & EDA lead | `src/data/`, `notebooks/01_eda.ipynb`, `data/raw/README.md` | verified loader, audit, EDA, licence/citation text |
-| 2 | Preprocessing & quality lead | `src/features/`, `tests/`, `requirements*.txt`, CI | leakage-safe pipelines, test suite, environment and lock file |
-| 3 | Probabilistic models lead | `src/models/bayesian_network.py`, `naive_bayes.py` | BN structure justification, NB baseline, inference error handling |
-| 4 | Neural network & interpretability lead | `src/models/mlp.py`, `src/evaluation/interpret.py` | MLP, learning curves, SHAP/permutation analysis |
-| 5 | Evaluation & report lead | `src/evaluation/` (cv, metrics, run), `reports/` | nested CV, tables/figures, IEEE report, integration of all sections |
+| 1 | ca (0.056) | thal (0.054) | ca (0.059) |
+| 2 | thal (0.030) | ca (0.042) | thal (0.046) |
+| 3 | cp (0.027) | cp (0.033) | cp (0.040) |
+| 4 | thalach (0.012) | sex (0.008) | sex (0.017) |
+| 5 | sex (0.011) | age (0.007) | age (0.012) |
+| 6 | oldpeak (0.007) | oldpeak (0.006) | oldpeak (0.011) |
 
-**Git workflow.**
-1. `git init`, add the remote, and commit only code, configs, tests, docs and small result files (`.gitignore` already excludes `.venv/`, caches, secrets, `.env`, logs, model files, and everything under `data/raw/` except its README).
-2. `main` is protected: no direct pushes; it must always pass `python -m pytest -q`.
-3. Branch per task from an up-to-date `main`: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`; keep branches short-lived.
-4. Commit small, in the imperative (`Add stratified fold hash check`); one logical change per commit.
-5. Open a pull request early; require one approving review from another member and a green test run. Pull requests that change results must state which commands were rerun and attach the new `evaluation_manifest.json` hash.
-6. Rules that protect the science: never change `config.yaml` evaluation settings, grids or model choices after looking at outer-fold results without recording it in the PR as a new, declared experiment; never tune on outer validation labels; regenerate (not hand-edit) any table or figure.
-7. Merge with squash; tag report-ready states (`v0.1-eda`, `v0.2-models`, `v1.0-report`).
-8. Weekly 30-minute sync; the evaluation lead owns merge order near deadlines.
+All three rank `ca`, `thal` and `cp` highest. Importance describes the fitted models, not causes; correlated predictors share credit.
 
-## 10. Licence, citation and deliverables
+## 8. Reproducibility
 
-- **Data:** UCI Heart Disease, licensed CC BY 4.0 per the UCI page (checked 2026-10-22); not redistributed here. Please cite: Janosi, A., Steinbrunn, W., Pfisterer, M., & Detrano, R. (1989). *Heart Disease* [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C52P4X. The data owners also ask publications to name the principal investigator responsible for each institution's data (Cleveland / V.A. Long Beach: Robert Detrano, M.D., Ph.D.).
-- **Code:** no licence file has been chosen yet; add one before publishing the repository.
+One project seed (`project.seed = 42`) drives the outer and inner folds, model randomness, the bootstrap and the permutations. Exact versions are in `requirements-lock.txt` and `results/metrics/evaluation_manifest.json` (Python 3.9.6, numpy 2.0.2, pandas 2.3.3, scikit-learn 1.6.1, pgmpy 0.1.26, streamlit 1.50.0).
 
-### Web interface
-`streamlit run app/streamlit_app.py` serves five pages: Overview, Data explorer, Model results, Risk estimator (demo) and Methods and limitations (Streamlit 1.50.0, which supports this Python 3.9 environment). The pages show saved results, never new estimates; the estimator refits the three pipelines on all 303 rows (joint hyper-parameter setting most often selected in the nested CV, no new tuning), validates inputs, warns on extrapolation, repeats the calibration caveats, and offers a seeded SHAP explanation of the MLP. Every page carries the not-a-medical-device disclaimer, nothing entered is stored, and telemetry is off. 34 tests cover the logic and drive every page headlessly with `AppTest`; the real UI was also checked once in Chrome through the DevTools protocol (manual, not an automated test). Design, research notes, deployment caveats and limits are in `app/README.md`. Deployment is untested and the dataset is not in Git, so a host must provide it.
+**Verified on 2026-10-26 (macOS, CPU):** `python -m pytest -q` passes; the full evaluation and `interpret` ran without errors; refitted models reproduce the saved out-of-fold predictions to within 1e-15; all five web pages open without errors. Not verified: other operating systems, Python versions or hardware.
 
-**Live demo checklist.** From the project root: `.venv/bin/python -m pytest -q` (135 passed), then `.venv/bin/streamlit run app/streamlit_app.py` and open http://localhost:8501. If the port is taken (an earlier run is still open), stop that run or add `--server.port 8502`. The first estimate refits the three models (a few seconds); later ones are cached.
+## 9. Limitations
 
-### Report and presentation
-- `reports/main.pdf` (8 pages, IEEE conference format) built from `reports/main.tex` and `reports/references.bib`; build instructions in `reports/README.md`. Tables and number macros are generated from `results/metrics/` by `python -m src.evaluation.make_report_assets`, so prose numbers cannot drift from the results.
-- `reports/presentation_outline.md`: 12-slide outline (generated from the same numbers).
-- `reports/presentation/Heart_Disease_Risk_Modelling.pptx`: 17-slide PowerPoint deck (native charts, speaker notes on every slide) built from the same numbers.
-- `reports/project_report/Heart_Disease_Risk_Modelling_Report.docx`: 16-page project report for teachers (plainer than the IEEE paper; includes how-to-reproduce and team-contribution appendices). Export to PDF from Word after filling in the names.
-- Both were written by hand from `results/metrics/` (not regenerated by `make_report_assets`), so re-check their numbers if the evaluation is ever rerun.
-- `python -m src.evaluation.audit_report` checks citations, referenced files, staleness of generated assets, the report's qualitative claims against the results, the README tables, and the README test count.
-- The report was compiled with Tectonic 0.17.0 (installed via Homebrew for this purpose). Every reference was checked against Crossref, arXiv, JMLR or Open Library; the author block is a placeholder.
+- Only 303 patients, one centre, one period; no external validation.
+- Referral and selection bias: prevalence (45.9%) is not a population rate; asymptomatic chest pain has the highest disease rate.
+- Predictors include exercise testing, fluoroscopy and perfusion imaging, so the models do not apply to first-contact screening.
+- The binary target pools `num` 1-4; severity is discarded. Sparse categories make probability tables unstable. 206 men vs 97 women; no fairness analysis.
+- Six rows with missing `ca`/`thal` are filled with the training mode.
+- Bayesian network and Naive Bayes smoothing chose the top grid value in every fold.
+- The Bayesian network structure is an assumption.
+- pgmpy is pinned below 1.0 (1.0 needs Python >= 3.10 and renames `BayesianNetwork`). Python 3.9 is past end of life and some libraries print deprecation warnings.
+- The notebooks are generated copies; after editing a `.py` file, run `python tools/py_to_notebooks.py`.
+
+## 10. Git workflow
+
+1. `main` is protected: no direct pushes; it must always pass `python -m pytest -q`.
+2. Branch per task from an up-to-date `main` (`name/topic`), keep branches short-lived, commit small, in the imperative.
+3. Open a pull request early; one approving review from another member and a green test run.
+4. Never change evaluation settings, grids or model choices after looking at outer-fold results without declaring it as a new experiment; never tune on outer labels; regenerate (do not hand-edit) tables and figures.
+
+## 11. Licence, citation and deliverables
+
+- **Data:** UCI Heart Disease, CC BY 4.0; not redistributed here. Cite: Janosi, A., Steinbrunn, W., Pfisterer, M., & Detrano, R. (1989). *Heart Disease* [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C52P4X. Principal investigator for the Cleveland data: Robert Detrano, M.D., Ph.D.
+- **Code:** no licence file has been chosen yet.
+- **Web app:** `streamlit run app/streamlit_app.py` serves five pages (Overview, Data explorer, Model results, Risk estimator (demo), Methods and limitations). Details in `app/README.md`.
+- **Report:** `reports/project_report/Heart_Disease_Risk_Modelling_Report.docx`, about 15 pages, structured as the course sections (introduction, related work, data and EDA, preprocessing, theory, Bayesian network and Naive Bayes, linear/kernel/ensemble models, experimental design, results, interpretation, software, limitations, conclusion, references, team contributions). Fill in roll numbers, course and supervisor, then export to PDF from Word.
+- **Presentation:** `reports/presentation/Heart_Disease_Risk_Modelling.pptx`, 18 slides with the presenter of each slide marked and speaker notes on every slide.
+- The report and slides were generated from `results/metrics/`; if the evaluation is rerun, regenerate or re-check their numbers.
+- **Phase 2** (not in this branch): the earlier MLP / SHAP work is in Git history (commit `a4ea3a8`).

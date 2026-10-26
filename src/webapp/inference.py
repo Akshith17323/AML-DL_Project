@@ -15,11 +15,9 @@ from sklearn.base import clone
 
 from src.data.eda import DOMAINS, PLAUSIBLE
 from src.data.loader import FEATURE_COLUMNS, get_xy, load_cleveland, load_config, resolve
-from src.models.pipelines import build_bn_pipeline, build_mlp_pipeline, build_nb_pipeline
+from src.models.pipelines import MODELS, params_from_selection
 
-MODEL_NAMES = ["Bayesian Network", "Naive Bayes", "MLP"]
-_CONFIG_KEY = {"Bayesian Network": "bayesian_network", "Naive Bayes": "naive_bayes", "MLP": "mlp"}
-_BUILDERS = {"Bayesian Network": build_bn_pipeline, "Naive Bayes": build_nb_pipeline, "MLP": build_mlp_pipeline}
+MODEL_NAMES = list(MODELS)
 
 LABELS = {
     "age": "Age (years)", "sex": "Sex", "cp": "Chest pain type", "trestbps": "Resting blood pressure (mm Hg)",
@@ -99,11 +97,14 @@ def final_hyperparameters(cfg: dict | None = None) -> tuple[dict, str]:
         return out, "config defaults (nested-CV selections not found)"
     sel = pd.read_csv(path)
     for m in MODEL_NAMES:
+        grid = cfg["tuning"][MODELS[m][0]]
         s = sel[sel.model == m]
-        cols = [c for c in s.columns if c.startswith("model__") and s[c].notna().any()]
-        combo = s.groupby(cols).size().sort_values(ascending=False).index[0]
-        combo = (combo,) if not isinstance(combo, tuple) else combo
-        out[m] = {c: float(v) for c, v in zip(cols, combo)}
+        if s.empty:
+            continue
+        cols = [c for c in grid if c in s.columns]
+        combo = s[cols].astype(str).value_counts().index[0]  # as strings so "None"/NaN choices are counted too
+        first = s[(s[cols].astype(str) == pd.Series(combo, index=cols)).all(axis=1)].iloc[0]
+        out[m] = params_from_selection(first, {c: grid[c] for c in cols})
     return out, "most frequently selected setting in the nested cross-validation"
 
 
@@ -128,24 +129,6 @@ def train_final_models(cfg: dict | None = None) -> FinalModels:
     hp, source = final_hyperparameters(cfg)
     pipes = {}
     for m in MODEL_NAMES:
-        pipe = clone(_BUILDERS[m](cfg)).set_params(**hp[m])
+        pipe = clone(MODELS[m][1](cfg)).set_params(**hp[m])
         pipes[m] = pipe.fit(X, y)
     return FinalModels(pipes, X, y, hp, source)
-
-
-def explain_mlp(models: FinalModels, row: pd.DataFrame, n_background: int = 30, nsamples: int = 300, seed: int = 42) -> pd.Series:
-    """Kernel-SHAP values (change in P(disease)) per raw predictor for one row, plus a ``base value`` entry."""
-    import logging
-    import shap  # imported lazily: heavy, and only needed when the user asks for an explanation
-    logging.getLogger("shap").setLevel(logging.WARNING)
-    pipe = models.pipelines["MLP"]
-    f = lambda a: pipe.predict_proba(pd.DataFrame(a, columns=FEATURE_COLUMNS))[:, 1]
-    bg = models.train_X.sample(n_background, random_state=seed).to_numpy(dtype=float)
-    with models._lock:
-        np.random.seed(seed)
-        expl = shap.KernelExplainer(f, bg)
-        sv = np.asarray(expl.shap_values(row[FEATURE_COLUMNS].to_numpy(dtype=float), nsamples=nsamples, silent=True))[0]
-        base = float(np.ravel(expl.expected_value)[0])
-    s = pd.Series(sv, index=FEATURE_COLUMNS)
-    s.attrs["base_value"] = base
-    return s
