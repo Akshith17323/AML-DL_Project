@@ -24,7 +24,7 @@ features:
   continuous: [age, trestbps, chol, thalach, oldpeak]
   binary: [sex, fbs, exang]
   ordinal: [ca, slope]            # ca: 0-3 vessels; slope: 1 up, 2 flat, 3 down
-  categorical: [cp, restecg, thal]  # nominal codes; one-hot for the MLP
+  categorical: [cp, restecg, thal]  # nominal codes; one-hot for LR / SVM / RF / GB
   # Discretisation for BN / Naive Bayes: train-fold quantile bins (tertiles).
   discretization:
     n_bins: 3
@@ -38,18 +38,11 @@ models:
     missing: error         # error | marginalize (NaN evidence is dropped from inference)
   naive_bayes:
     alpha: 1.0             # same Laplace pseudo-count as the BN
-  mlp:
-    # Fixed a priori for a ~300-row dataset; not tuned on any outer-fold result.
-    hidden_sizes: [16, 8]      # ~480 parameters for 20 inputs
-    activation: relu
-    dropout: 0.3
-    weight_decay: 0.001        # L2 penalty inside Adam
-    learning_rate: 0.001
-    batch_size: 32
-    max_epochs: 300
-    patience: 20               # early stopping on inner validation loss
-    min_delta: 0.0001
-    val_fraction: 0.2          # stratified split of the TRAINING fold only
+  logistic_regression:
+    C: 1.0             # inverse regularisation strength; smaller = stronger L2
+  svm:
+    C: 1.0             # regularisation; kernel = rbf (set in pipeline)
+    gamma: scale       # 1 / (n_features * X.var()), a standard default for standardised data
   random_forest:
     n_estimators: 200
     max_depth: 3
@@ -61,9 +54,12 @@ models:
 tuning:
   # Small grids; selection criterion = inner out-of-fold log loss (training data only).
   criterion: log_loss
-  naive_bayes: {model__alpha: [0.5, 1.0, 2.0]}
-  bayesian_network: {model__pseudo_count: [0.5, 1.0, 2.0]}
-  mlp: {model__weight_decay: [0.001, 0.01], model__dropout: [0.3, 0.5]}
+  # Phase 1 grids, declared before the Phase 1 run. The BN / NB grids reach 10 because the earlier
+  # run picked the top value (2) in every fold.
+  naive_bayes: {model__alpha: [0.5, 1.0, 2.0, 5.0, 10.0]}
+  bayesian_network: {model__pseudo_count: [0.5, 1.0, 2.0, 5.0, 10.0]}
+  logistic_regression: {model__C: [0.01, 0.1, 1, 10]}
+  svm: {model__C: [0.1, 1, 10], model__gamma: [scale, 0.01]}
   random_forest: {model__n_estimators: [200, 500], model__max_depth: [3, 5, null]}
   gradient_boosting: {model__learning_rate: [0.05, 0.1], model__n_estimators: [100, 200], model__max_depth: [2, 3]}
 
@@ -79,5 +75,3 @@ evaluation:
 paths:
   figures: results/figures
   metrics: results/metrics
-  report_figures: reports/figures
-  report_tables: reports/tables

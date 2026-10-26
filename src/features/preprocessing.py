@@ -5,7 +5,8 @@ categories, quantile bin edges, category vocabularies) is learned in ``fit``.
 Build a pipeline with a builder below and fit it on a training fold only,
 then call ``transform`` on validation/test data.
 
-* ``build_mlp_preprocessor``      -> scaled numeric + one-hot features for the MLP.
+* ``build_numeric_preprocessor``  -> scaled numeric + one-hot features for Logistic Regression,
+                                     SVM, Random Forest and Gradient Boosting.
 * ``build_discrete_preprocessor`` -> integer-coded discrete states for the Bayesian
                                      Network and Naive Bayes.
 """
@@ -137,7 +138,7 @@ class DiscretePreprocessor(BaseEstimator, TransformerMixin):
         return {c: len(v) for c, v in self.state_labels_.items()}
 
 
-def build_mlp_preprocessor(config: dict | None = None) -> Pipeline:
+def build_numeric_preprocessor(config: dict | None = None) -> Pipeline:
     """Guard -> per-type imputation/scaling/encoding. Output is a dense float array.
 
     continuous : median impute, standardise

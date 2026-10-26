@@ -32,13 +32,10 @@ MAIN_OVERRIDES = {
 # Choose what this cell does:
 #   None       -> nothing (default, safe for a demo)
 #   "analyse"  -> recompute tables/figures from the saved out-of-fold predictions (fast)
-#   "full"     -> re-run the whole nested cross-validation (about 30 min) and overwrite results/
+#   "full"     -> re-run the whole nested cross-validation (about 10 min) and overwrite results/
 MODE = None
 if MODE is not None:
-    main(MODE == "analyse")''',
-    "src/evaluation/audit_report.py": '''\
-exit_code = main()
-print("audit exit code:", exit_code)''',
+    main(MODE == "analyse")'''
 }
 
 

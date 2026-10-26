@@ -5,7 +5,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from src.data.loader import FEATURE_COLUMNS, get_xy, load_cleveland
 from src.features.preprocessing import (DiscretePreprocessor, build_discrete_preprocessor,
-                                        build_mlp_preprocessor, feature_groups)
+                                        build_numeric_preprocessor, feature_groups)
 
 
 @pytest.fixture(scope="module")
@@ -19,9 +19,9 @@ def test_feature_groups_partition_predictors():
     assert sorted(sum(g.values(), [])) == sorted(FEATURE_COLUMNS)
 
 
-def test_mlp_no_nan_and_dimensions(data):
+def test_numeric_no_nan_and_dimensions(data):
     _, X, y = data
-    out = build_mlp_preprocessor().fit_transform(X)
+    out = build_numeric_preprocessor().fit_transform(X)
     assert not out.isna().any().any()
     # 5 continuous + 3 binary + 2 ordinal + onehot(cp 4 + restecg 3 + thal 3)
     assert out.shape == (303, 5 + 3 + 2 + 4 + 3 + 3)
@@ -43,7 +43,7 @@ def test_discrete_no_nan_and_codes(data):
 def test_missing_values_imputed_with_train_mode(data):
     _, X, _ = data
     train = X.iloc[:200]
-    mlp = build_mlp_preprocessor().fit(train)
+    mlp = build_numeric_preprocessor().fit(train)
     row = X.iloc[[0]].copy()
     row[["ca", "thal"]] = np.nan
     out = mlp.transform(row)
@@ -58,7 +58,7 @@ def test_missing_values_imputed_with_train_mode(data):
 
 def test_unseen_category_handled(data):
     _, X, _ = data
-    mlp = build_mlp_preprocessor().fit(X)
+    mlp = build_numeric_preprocessor().fit(X)
     row = X.iloc[[0]].copy(); row["cp"] = 99.0
     out = mlp.transform(row)
     assert out[[c for c in out.columns if c.startswith("cp_")]].to_numpy().sum() == 0
@@ -77,7 +77,7 @@ def test_extreme_values_clip_to_end_bins(data):
 
 
 @pytest.mark.parametrize("bad", ["num", "target"])
-@pytest.mark.parametrize("builder", [build_mlp_preprocessor, build_discrete_preprocessor])
+@pytest.mark.parametrize("builder", [build_numeric_preprocessor, build_discrete_preprocessor])
 def test_target_column_rejected(data, bad, builder):
     df, X, y = data
     X2 = X.copy(); X2[bad] = df[bad]
@@ -89,7 +89,7 @@ def test_target_column_rejected(data, bad, builder):
 
 def test_output_has_no_target_columns(data):
     _, X, _ = data
-    for pre in (build_mlp_preprocessor(), build_discrete_preprocessor()):
+    for pre in (build_numeric_preprocessor(), build_discrete_preprocessor()):
         out = pre.fit_transform(X)
         assert not {"num", "target"} & set(out.columns)
 
@@ -97,7 +97,7 @@ def test_output_has_no_target_columns(data):
 def test_statistics_come_from_training_data_only(data):
     _, X, _ = data
     train = X.iloc[:200]
-    mlp = build_mlp_preprocessor().fit(train)
+    mlp = build_numeric_preprocessor().fit(train)
     scaler = mlp.named_steps["columns"].named_transformers_["continuous"].named_steps["scale"]
     assert np.allclose(scaler.mean_, train[["age", "trestbps", "chol", "thalach", "oldpeak"]].mean().to_numpy())
     assert not np.allclose(scaler.mean_, X[["age", "trestbps", "chol", "thalach", "oldpeak"]].mean().to_numpy())
@@ -110,7 +110,7 @@ def test_transforming_validation_does_not_change_fit(data):
     _, X, _ = data
     train, val = X.iloc[:200], X.iloc[200:].copy()
     val["chol"] = 10_000.0
-    pre = build_mlp_preprocessor().fit(train)
+    pre = build_numeric_preprocessor().fit(train)
     before = pre.named_steps["columns"].named_transformers_["continuous"].named_steps["scale"].mean_.copy()
     pre.transform(val)
     after = pre.named_steps["columns"].named_transformers_["continuous"].named_steps["scale"].mean_
@@ -121,7 +121,7 @@ def test_refit_in_each_fold_differs_and_clone_is_unfitted(data):
     _, X, y = data
     skf = StratifiedKFold(5, shuffle=True, random_state=42)
     means = []
-    base = build_mlp_preprocessor()
+    base = build_numeric_preprocessor()
     for tr, va in skf.split(X, y):
         pre = clone(base).fit(X.iloc[tr])
         assert not hasattr(clone(base).named_steps["columns"], "transformers_")
@@ -132,6 +132,6 @@ def test_refit_in_each_fold_differs_and_clone_is_unfitted(data):
 
 def test_feature_names_preserved(data):
     _, X, _ = data
-    out = build_mlp_preprocessor().fit_transform(X)
+    out = build_numeric_preprocessor().fit_transform(X)
     assert list(out.columns[:5]) == ["age", "trestbps", "chol", "thalach", "oldpeak"]
-    assert list(build_mlp_preprocessor().fit(X).get_feature_names_out()) == list(out.columns)
+    assert list(build_numeric_preprocessor().fit(X).get_feature_names_out()) == list(out.columns)
