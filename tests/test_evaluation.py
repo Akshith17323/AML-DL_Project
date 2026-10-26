@@ -8,7 +8,8 @@ from src.evaluation.metrics import (calibration_slope_intercept, check_probabili
                                     expected_calibration_error, youden_threshold)
 from src.evaluation.run_evaluation import validate_oof
 from src.evaluation.splits import outer_folds
-from src.models.pipelines import build_bn_pipeline, build_nb_pipeline
+from src.models.pipelines import (build_bn_pipeline, build_gb_pipeline, build_lr_pipeline, build_nb_pipeline,
+                                  build_rf_pipeline, build_svm_pipeline)
 
 
 def test_compute_metrics_known_values():
@@ -98,7 +99,11 @@ def test_validate_oof_accepts_good_and_detects_problems():
 
 
 @pytest.mark.parametrize("builder,grid", [(build_nb_pipeline, {"model__alpha": [0.5, 2.0]}),
-                                          (build_bn_pipeline, {"model__pseudo_count": [0.5, 2.0]})])
+                                          (build_bn_pipeline, {"model__pseudo_count": [0.5, 2.0]}),
+                                          (build_lr_pipeline, {"model__C": [0.1, 1.0]}),
+                                          (build_svm_pipeline, {"model__C": [0.1, 1.0]}),
+                                          (build_rf_pipeline, {"model__max_depth": [3, None]}),
+                                          (build_gb_pipeline, {"model__max_depth": [2, 3]})])
 def test_outer_validation_labels_never_influence_predictions(builder, grid):
     """Shuffling the labels of the outer validation rows must not change any prediction."""
     cfg = load_config(); X, y = get_xy(load_cleveland(config=cfg)); outer = outer_folds(y, cfg)[:2]

@@ -30,10 +30,10 @@ Academic machine-learning project that compares six classifiers on the UCI Heart
 
 | Member | Phase 1 work | Explains in the viva |
 |---|---|---|
-| Hardik | Data loading, verification, EDA and notebook, preprocessing / feature engineering (`src/data/`, `src/features/`, `notebooks/01_eda.ipynb`) | Dataset quality and EDA, feature engineering |
-| Ayush | Bayesian network (structure, conditional probability tables, inference), data splits, metrics, Methods page (`src/models/bayesian_network.py`, `src/evaluation/splits.py`, `metrics.py`, `app/views/methods.py`) | Theoretical rigour (probabilistic graphical models) |
-| Akshith | Logistic Regression and SVM, model pipelines, the script that trains and compares all models (`src/models/pipelines.py`, `src/evaluation/run_evaluation.py`) | Model application (linear and kernel models) |
-| Vansh | Random Forest and Gradient Boosting, hyper-parameter tuning with nested CV, feature importance (`src/evaluation/cv.py`, `src/evaluation/interpret.py`) | Model application (ensembles), tuning |
+| Ayush | Data loading, verification, EDA and notebook, preprocessing / feature engineering (`src/data/`, `src/features/`, `notebooks/01_eda.ipynb`) | Dataset quality and EDA, feature engineering |
+| Vansh | Bayesian network (structure, conditional probability tables, inference), data splits, metrics, Methods page (`src/models/bayesian_network.py`, `src/evaluation/splits.py`, `metrics.py`, `app/views/methods.py`) | Theoretical rigour (probabilistic graphical models) |
+| Hardik | Logistic Regression and SVM, model pipelines, the script that trains and compares all models (`src/models/pipelines.py`, `src/evaluation/run_evaluation.py`) | Model application (linear and kernel models) |
+| Akshith | Random Forest and Gradient Boosting, hyper-parameter tuning with nested CV, feature importance (`src/evaluation/cv.py`, `src/evaluation/interpret.py`) | Model application (ensembles), tuning |
 | Kabir | Naive Bayes, the web app adapted to the ML models (`src/models/naive_bayes.py`, `app/`, `src/webapp/`) | Model application, demo |
 
 ## 2. Quick start
