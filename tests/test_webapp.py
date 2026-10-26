@@ -56,13 +56,17 @@ def test_out_of_training_range_warns_but_predicts(models, defaults):
 # ------------------------------------------------------------------ models
 def test_final_hyperparameters_use_joint_mode(tmp_path):
     cfg = copy.deepcopy(load_config()); cfg["paths"]["metrics"] = str(tmp_path)
-    rows = ([{"model": "MLP", "model__weight_decay": 0.01, "model__dropout": 0.5}] * 3 +
-            [{"model": "MLP", "model__weight_decay": 0.001, "model__dropout": 0.5}] * 2 +
+    rows = ([{"model": "SVM", "model__C": 1.0, "model__gamma": "scale"}] * 3 +
+            [{"model": "SVM", "model__C": 10.0, "model__gamma": "scale"}] * 2 +
+            [{"model": "Random Forest", "model__n_estimators": 500, "model__max_depth": None}] * 2 +
+            [{"model": "Random Forest", "model__n_estimators": 200, "model__max_depth": 3}] +
             [{"model": "Naive Bayes", "model__alpha": 1.0}] * 2 + [{"model": "Naive Bayes", "model__alpha": 2.0}] +
             [{"model": "Bayesian Network", "model__pseudo_count": 0.5}])
     pd.DataFrame(rows).to_csv(tmp_path / "selected_hyperparameters.csv", index=False)
     hp, src = inf.final_hyperparameters(cfg)
-    assert hp["MLP"] == {"model__weight_decay": 0.01, "model__dropout": 0.5}
+    assert hp["SVM"] == {"model__C": 1, "model__gamma": "scale"}
+    assert hp["Random Forest"] == {"model__n_estimators": 500, "model__max_depth": None}  # types restored from the grid
+    assert isinstance(hp["Random Forest"]["model__n_estimators"], int)
     assert hp["Naive Bayes"] == {"model__alpha": 1.0} and hp["Bayesian Network"] == {"model__pseudo_count": 0.5}
     assert "nested" in src
 
@@ -93,14 +97,6 @@ def test_sensible_direction_for_extreme_profiles(models, defaults):
     high = {**defaults, "ca": 3, "thal": 7, "cp": 4, "exang": 1, "oldpeak": 3.0, "slope": 2, "age": 65, "thalach": 110}
     pl, ph = (models.predict(inf.validate_inputs(v)[0]) for v in (low, high))
     assert all(ph[m] > pl[m] for m in MODEL_ORDER)
-
-
-def test_explanation_shape_and_additivity_sign(models, defaults):
-    row, _, _ = inf.validate_inputs(defaults)
-    s = inf.explain_mlp(models, row, n_background=10, nsamples=100)
-    assert list(s.index) == FEATURE_COLUMNS and np.isfinite(s.values).all() and 0 <= s.attrs["base_value"] <= 1
-    again = inf.explain_mlp(models, row, n_background=10, nsamples=100)
-    assert np.allclose(s.values, again.values)  # seeded -> reproducible
 
 
 def test_default_values_are_typical_not_extreme(models):
@@ -147,7 +143,7 @@ def test_every_page_renders_with_disclaimer_and_no_exception(mod):
 def test_entry_point_runs_and_shows_overview():
     at = AppTest.from_file(str(PROJECT_ROOT / "app/streamlit_app.py"), default_timeout=90).run()
     assert not at.exception and [t.value for t in at.title] == ["Heart Disease Risk Modelling"]
-    assert len(at.metric) == 3
+    assert len(at.metric) == len(MODEL_ORDER)
 
 
 @needs_results
@@ -163,10 +159,10 @@ def test_estimator_shows_nothing_until_submitted():
     assert not at.exception and len(at.metric) == 0 and "profile_values" not in at.session_state
 
 
-def test_estimator_submit_shows_three_valid_probabilities():
+def test_estimator_submit_shows_one_valid_probability_per_model():
     at = _page("risk_estimator").run()
     _submit(at).click().run()
-    assert not at.exception and len(at.metric) == 3
+    assert not at.exception and len(at.metric) == len(MODEL_ORDER)
     vals = [float(m.value.rstrip("%")) for m in at.metric]
     assert all(0 <= v <= 100 for v in vals) and [m.label for m in at.metric] == MODEL_ORDER
 
@@ -176,11 +172,11 @@ def test_estimator_unknown_ca_thal_is_noted_and_predicts():
     at.selectbox(key="in_ca").select(inf_unknown()).run()
     at.selectbox(key="in_thal").select(inf_unknown()).run()
     _submit(at).click().run()
-    assert not at.exception and len(at.metric) == 3
+    assert not at.exception and len(at.metric) == len(MODEL_ORDER)
     assert any("training-data mode" in c.value for c in at.caption)
 
 
-def test_estimator_changes_with_inputs_and_explanation_button_works():
+def test_estimator_changes_with_inputs():
     at = _page("risk_estimator").run()
     _submit(at).click().run()
     base = [m.value for m in at.metric]
@@ -188,9 +184,6 @@ def test_estimator_changes_with_inputs_and_explanation_button_works():
     at.selectbox(key="in_thal").select(7).run()
     _submit(at).click().run()
     assert [m.value for m in at.metric] != base
-    at.button(key="explain").click().run()
-    assert not at.exception
-    assert any("SHAP" in i.value for i in at.info)
 
 
 def _snapshot():
@@ -204,10 +197,9 @@ def test_nothing_entered_is_written_to_disk_or_kept_beyond_session_state():
     at = _page("risk_estimator").run()
     at.number_input(key="in_age").set_value(61).run()
     _submit(at).click().run()
-    at.button(key="explain").click().run()
     assert not at.exception
     assert _snapshot() == before  # no file created, modified or removed by using the estimator
-    allowed = {"profile_values", "explain"} | {f"in_{c}" for c in FEATURE_COLUMNS}
+    allowed = {"profile_values"} | {f"in_{c}" for c in FEATURE_COLUMNS}
     assert {k for k in at.session_state.filtered_state if not k.startswith("FormSubmitter:")} <= allowed
 
 

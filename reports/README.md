@@ -1,31 +1,20 @@
-# Report build instructions
+# Reports
 
-`main.tex` is an IEEE conference-format paper (`IEEEtran`) with `references.bib`. All numbers in the text, tables and the presentation outline are generated from `results/metrics/*`; do not edit `tables/*.tex` or `figures/*` by hand.
+| File | What it is |
+|---|---|
+| `project_report/Heart_Disease_Risk_Modelling_Report.docx` | Phase 1 project report (about 15 pages, Word) |
+| `presentation/Heart_Disease_Risk_Modelling.pptx` | Phase 1 presentation (18 slides, presenter marked on each slide, speaker notes) |
 
-## Regenerate assets and build
+Both were generated from `results/metrics/` and `results/figures/` after running
 
 ```bash
-# from the project root, after the experiments have been run (see the top-level README)
-python -m src.evaluation.make_report_assets      # writes reports/tables/*.tex, numbers.tex, figures/*.png, presentation_outline.md
-
-# compile (any one of these)
-cd reports
-tectonic -X compile main.tex                     # tested: Tectonic 0.17.0; downloads TeX support files on first run (needs internet)
-latexmk -pdf main.tex                            # TeX Live / MacTeX with IEEEtran, booktabs, cite installed (not tested here)
-pdflatex main && bibtex main && pdflatex main && pdflatex main    # manual equivalent (not tested here)
-
-# audit report, README, tables, figures and outline against the results
-cd .. && python -m src.evaluation.audit_report
+python -m src.evaluation.run_evaluation
+python -m src.evaluation.interpret
 ```
 
-Tectonic was installed with `brew install tectonic` (remove with `brew uninstall tectonic`). Compilation with Tectonic produces a few cosmetic warnings (Times font-shape substitution; one slightly overfull line in the references).
+They are not regenerated automatically: if the evaluation is rerun, re-check every number in them.
 
-## Files
-- `main.tex`, `references.bib`: the paper (14 required sections; author block is a placeholder to be filled in by the team).
-- `tables/numbers.tex`: generated number macros; `tables/*.tex`: generated tables; `tables/model_comparison_fold_level.csv`: compact CSV table.
-- `figures/`: copies of `results/figures/*.png` used by the paper.
-- `presentation_outline.md`: 12-slide outline (generated).
-- `main.pdf`: compiled output (regenerate; do not edit).
-
-## References
-Every entry in `references.bib` was checked on 2026-10-22 against Crossref (DOIs), arXiv, JMLR or Open Library (ISBNs). Entries without a DOI are cited by arXiv number or journal volume/pages. Re-verify before submission.
+Before submitting:
+- fill in roll numbers, course, supervisor and institution on the report's title page and slide 1;
+- in Word, right-click the table of contents and choose **Update Field** after any edit that moves pages;
+- export the report to PDF from Word (File > Save As > PDF).

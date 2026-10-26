@@ -1,0 +1,12 @@
+{
+  "max_abs_diff_refit_vs_saved_predictions": {
+    "Logistic Regression": 1.1102230246251565e-16,
+    "Random Forest": 1.1102230246251565e-16,
+    "Gradient Boosting": 1.1102230246251565e-16
+  },
+  "perm_repeats": 30,
+  "figures": [
+    "feature_importance.png",
+    "bn_structure.png"
+  ]
+}

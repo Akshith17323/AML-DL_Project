@@ -7,7 +7,7 @@ from sklearn.metrics import (average_precision_score, brier_score_loss, confusio
                              log_loss, roc_auc_score, roc_curve)
 
 PROB_METRICS = ["roc_auc", "pr_auc", "brier", "log_loss", "ece"]
-LABEL_METRICS = ["sensitivity", "specificity", "precision", "f1", "tn", "fp", "fn", "tp"]
+LABEL_METRICS = ["accuracy", "sensitivity", "specificity", "precision", "f1", "tn", "fp", "fn", "tp"]
 
 
 def check_probabilities(p) -> np.ndarray:
@@ -52,7 +52,7 @@ def compute_metrics(y, p, threshold: float = 0.5, n_bins: int = 10) -> dict:
     return {"roc_auc": roc_auc_score(y, p), "pr_auc": average_precision_score(y, p),
             "brier": brier_score_loss(y, p), "log_loss": log_loss(y, np.clip(p, 1e-15, 1 - 1e-15), labels=[0, 1]),
             "ece": expected_calibration_error(y, p, n_bins),
-            "sensitivity": sens, "specificity": spec, "precision": prec, "f1": f1,
+            "accuracy": (tp + tn) / len(y), "sensitivity": sens, "specificity": spec, "precision": prec, "f1": f1,
             "tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp), "threshold": float(np.mean(threshold))}
 
 

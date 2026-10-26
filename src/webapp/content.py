@@ -19,16 +19,11 @@ POPULATION_NOTE = (
     "at first contact."
 )
 
-CALIBRATION_NOTE = (
-    "In the study the Bayesian network and Naive Bayes were over-confident (calibration slopes below 1), so their "
-    "extreme probabilities should not be taken at face value; the MLP was better calibrated. All three share the "
-    "same data limitations."
-)
-
-MLP_EXPLANATION_NOTE = (
-    "SHAP values describe how *this fitted MLP* moves its output for the entered values relative to 30 reference "
-    "patients. They are an approximation (sampling-based Kernel SHAP), are shared among correlated predictors, and "
-    "say nothing about causes or about what would happen if a value were changed."
+PROBABILITY_NOTE = (
+    "In the study the six models ranked patients about equally well, but they can still give quite different "
+    "probabilities for the same profile. Naive Bayes and the Bayesian network in particular tend to give extreme "
+    "values (close to 0% or 100%), so no single number should be taken at face value. All six share the same data "
+    "limitations."
 )
 
 DATA_MISSING_HELP = (
