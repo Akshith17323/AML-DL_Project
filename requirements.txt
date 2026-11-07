@@ -19,3 +19,6 @@ nbclient>=0.8
 ipykernel>=6.0
 pytest>=7.4
 pyflakes>=3.0
+torch>=2.1
+optuna>=4.0
+optuna-integration[sklearn]>=4.0
