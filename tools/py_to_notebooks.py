@@ -35,7 +35,19 @@ MAIN_OVERRIDES = {
 #   "full"     -> re-run the whole nested cross-validation (about 10 min) and overwrite results/
 MODE = None
 if MODE is not None:
-    main(MODE == "analyse")'''
+    main(MODE == "analyse")''',
+    "src/evaluation/run_phase2.py": '''\
+# Safe notebook entry point: choose a pilot explicitly; full nested searches stay off by default.
+MODE = None  # None | "pilot-pooled" | "pilot-cross-cohort"
+if MODE == "pilot-pooled":
+    run("pooled", pilot=True)
+elif MODE == "pilot-cross-cohort":
+    run("cross-cohort", pilot=True)''',
+    "src/evaluation/phase2_ablations.py": '''\
+# Set True explicitly to run the fast pilot ablations.
+RUN_PILOT = False
+if RUN_PILOT:
+    run(pilot=True)''',
 }
 
 
