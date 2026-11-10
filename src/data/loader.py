@@ -10,6 +10,7 @@ import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = PROJECT_ROOT / "config.yaml"
+PHASE2_CONFIG_PATH = PROJECT_ROOT / "config.phase2.yaml"
 
 FEATURE_COLUMNS = ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
                    "thalach", "exang", "oldpeak", "slope", "ca", "thal"]
@@ -18,6 +19,12 @@ BINARY_TARGET = "target"
 VALID_NUM_VALUES = (0, 1, 2, 3, 4)
 EXPECTED_COLUMNS = FEATURE_COLUMNS + [ORIGINAL_TARGET]
 RAW_MEMBER = "processed.cleveland.data"
+COHORT_FILES = {
+    "Cleveland": "processed.cleveland.data",
+    "Hungarian": "processed.hungarian.data",
+    "Switzerland": "processed.switzerland.data",
+    "VA": "processed.va.data",
+}
 
 
 def load_config(path: Path = CONFIG_PATH) -> dict:
@@ -94,6 +101,75 @@ def load_cleveland(path: str | Path | None = None, config: dict | None = None) -
 def get_xy(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     """Features (no target columns) and binary target."""
     return df[FEATURE_COLUMNS].copy(), df[BINARY_TARGET].copy()
+
+
+def load_all_cohorts(archive_path: str | Path | None = None,
+                     config: dict | None = None) -> pd.DataFrame:
+    """Load the four independent processed UCI cohorts from the source archive.
+
+    Raw/reprocessed archive members are alternate forms of these cohorts and are
+    deliberately not concatenated as extra patients.
+    """
+    cfg = config or load_config(PHASE2_CONFIG_PATH)
+    data_cfg = cfg["data"]
+    cohorts = data_cfg.get("cohorts", COHORT_FILES)
+    if dict(cohorts) != COHORT_FILES:
+        raise ValueError(f"Phase 2 cohorts must be exactly {COHORT_FILES}")
+    archive = resolve(archive_path or data_cfg["archive"])
+    frames = []
+    with zipfile.ZipFile(archive) as zf:
+        absent = [member for member in cohorts.values() if member not in zf.namelist()]
+        if absent:
+            raise FileNotFoundError(f"Cohort file(s) missing from archive: {absent}")
+        for cohort, member in cohorts.items():
+            with zf.open(member) as source:
+                df = pd.read_csv(source, header=None, na_values=[data_cfg["missing_marker"]],
+                                 skipinitialspace=True)
+            if df.shape[1] != len(EXPECTED_COLUMNS) or df.isna().all(axis=1).any():
+                raise ValueError(f"{member}: expected {len(EXPECTED_COLUMNS)} columns, found {df.shape[1]}")
+            df.columns = EXPECTED_COLUMNS
+            df[BINARY_TARGET] = map_binary_target(df[ORIGINAL_TARGET])
+            df.insert(0, "cohort_patient_id", [f"{cohort}:{i}" for i in range(len(df))])
+            df.insert(0, "cohort", cohort)
+            frames.append(df)
+    out = pd.concat(frames, ignore_index=True)
+    if out["cohort_patient_id"].duplicated().any():
+        raise RuntimeError("Cohort patient identifiers are not unique")
+    return out
+
+
+def cohort_file_hashes(archive_path: str | Path | None = None,
+                       config: dict | None = None) -> dict[str, str]:
+    """SHA-256 for each processed member used by Phase 2."""
+    cfg = config or load_config(PHASE2_CONFIG_PATH)
+    archive = resolve(archive_path or cfg["data"]["archive"])
+    with zipfile.ZipFile(archive) as zf:
+        return {cohort: hashlib.sha256(zf.read(member)).hexdigest()
+                for cohort, member in cfg["data"]["cohorts"].items()}
+
+
+def verify_all_cohorts(df: pd.DataFrame) -> dict:
+    """Observed Phase 2 counts and missingness, overall and by cohort."""
+    required = {"cohort", "cohort_patient_id", *EXPECTED_COLUMNS, BINARY_TARGET}
+    if not required <= set(df.columns):
+        raise ValueError(f"Combined data missing columns: {sorted(required - set(df.columns))}")
+    by_cohort = {}
+    for cohort, group in df.groupby("cohort", sort=False):
+        by_cohort[cohort] = {
+            "n_rows": int(len(group)),
+            "negative": int((group[BINARY_TARGET] == 0).sum()),
+            "positive": int((group[BINARY_TARGET] == 1).sum()),
+            "missing_predictor_cells": int(group[FEATURE_COLUMNS].isna().sum().sum()),
+            "missing_per_feature": {c: int(n) for c, n in group[FEATURE_COLUMNS].isna().sum().items() if n},
+            "duplicate_rows": int(group[EXPECTED_COLUMNS].duplicated().sum()),
+        }
+    return {
+        "n_rows": int(len(df)),
+        "negative": int((df[BINARY_TARGET] == 0).sum()),
+        "positive": int((df[BINARY_TARGET] == 1).sum()),
+        "cohorts": by_cohort,
+        "patient_ids_unique": bool(df["cohort_patient_id"].is_unique),
+    }
 
 
 def verify_dataset(df: pd.DataFrame) -> dict:
