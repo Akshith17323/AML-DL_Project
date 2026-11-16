@@ -1,10 +1,44 @@
-# Heart Disease Risk Modelling: Phase 1
+# Heart Disease Risk Modelling: Phase 1 baseline and Phase 2 implementation
 
-Academic machine-learning project that compares six classifiers on the UCI Heart Disease (Cleveland) data: a domain-informed **Bayesian network**, **Naive Bayes**, **Logistic Regression**, an **SVM**, a **Random Forest** and **Gradient Boosting**.
+## Phase 2 additions
 
-> **This is not a clinically validated diagnostic system.** It uses 303 patients from one centre, is evaluated only by internal cross-validation, and must not be used for medical decisions.
+Phase 2 is an extension of Phase 1, not a replacement project. Every Phase 1 path remains in place, while Phase 2 files sit beside their Phase 1 equivalents and add all four independent processed UCI cohorts (920 patients), a regularised PyTorch MLP, a cross-fitted Bayesian Network--MLP stack, OptunaSearchCV/TPE hyperparameter selection without a handwritten candidate loop, cross-cohort validation, ablations, and an IEEEtran report.
 
-## At a glance
+```bash
+python -m src.data.verify_phase2
+python -m src.data.eda_phase2
+python -m src.evaluation.run_phase2 --pilot       # safe one-fold/one-trial execution check
+python -m src.evaluation.phase2_ablations --pilot
+python -m src.evaluation.make_phase2_report_assets
+```
+
+Open `notebooks/02_phase2_all_cohorts.ipynb` for the visible, executed four-cohort source audit and previews. `verify_phase2` also extracts all four processed source files into `data/raw/`; model code continues to validate and read the canonical archive members directly.
+
+The pilot is not a final performance experiment. Full runs omit `--pilot` and write under `results/phase2/main/`; freeze the configured search budget before interpreting them. See `config.phase2.yaml` and `reports/phase2/`.
+
+### How Phase 2 extends the Phase 1 structure
+
+| Phase 1 file/path (retained) | Phase 2 extension beside it |
+|---|---|
+| `config.yaml` | `config.phase2.yaml` |
+| `data/raw/processed.cleveland.data` | Hungarian, Switzerland, and VA processed files in the same folder |
+| `notebooks/01_eda.ipynb` | `notebooks/02_phase2_all_cohorts.ipynb` |
+| `src/data/{loader,verify,eda}.py/.ipynb` | `verify_phase2.py/.ipynb`, `eda_phase2.py/.ipynb`; the shared loader supports both phases |
+| `src/models/` classical models | `mlp.py/.ipynb`, `hybrid.py/.ipynb`, `phase2.py/.ipynb`, `learning_curves_phase2.py/.ipynb` |
+| `src/evaluation/run_evaluation.py/.ipynb` | `run_phase2.py/.ipynb`, `phase2_search.py/.ipynb`, `phase2_ablations.py/.ipynb` |
+| `tests/test_*.py/.ipynb` | matching `test_phase2_*.py/.ipynb` files |
+| `results/metrics/`, `results/figures/` | isolated `results/phase2/{pilot,main}/` outputs |
+| `reports/project_report/`, `reports/presentation/` | `reports/phase2/` IEEE sources and generated tables |
+
+No Phase 1 file is renamed or removed. As in Phase 1, every non-empty Python file under `app/`, `src/`, and `tests/` has an adjacent notebook with the same basename.
+
+## Retained Phase 1 baseline
+
+The detailed Phase 1 documentation remains below because Phase 2 extends it rather than overwriting it. Phase 1 compares six classifiers on the UCI Heart Disease Cleveland data: a domain-informed **Bayesian network**, **Naive Bayes**, **Logistic Regression**, an **SVM**, a **Random Forest** and **Gradient Boosting**.
+
+> **Neither phase is a clinically validated diagnostic system.** Phase 1 uses 303 patients from one centre; Phase 2 uses 920 historical patients from four cohorts and includes cross-cohort evaluation. Neither must be used for medical decisions.
+
+### Phase 1 at a glance
 - **Question:** under one identical, leakage-safe nested cross-validation, how well do six classical machine-learning models predict angiographic heart disease, and does the choice of model matter?
 - **Answer:** all six do well (pooled ROC AUC 0.890-0.910, accuracy 81.8%-84.9%). Five cannot be told apart; every paired difference whose 95% interval excludes zero involves Gradient Boosting, which is slightly behind.
 - **What drives the predictions:** `ca` (vessels on fluoroscopy), `thal` (thallium scan) and `cp` (chest pain type), for every model examined.
@@ -38,14 +72,14 @@ Academic machine-learning project that compares six classifiers on the UCI Heart
 
 ## 2. Quick start
 
-Tested on Python 3.9.6 (macOS).
+Phase 1 was tested on Python 3.9.6; the Phase 2 extension and saved runs were tested on Python 3.11.16 (macOS).
 
 ```bash
 # 1. environment (exact tested versions)
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-lock.txt        # or: pip install -r requirements.txt  (minimum versions)
 
-# 2. dataset (not in Git): put the original archive at data/raw/heart+disease.zip, then
+# 2. Phase 1 dataset: put the ignored source archive at data/raw/heart+disease.zip, then
 python -m src.data.verify                   # lists the archive, extracts processed.cleveland.data, validates it
 
 # 3. run everything, in this order
@@ -63,37 +97,43 @@ python tools/run_notebooks.py               # execute every notebook and report 
 
 If `.venv` was copied from another machine or folder, its launcher scripts (`streamlit`, `pytest`) still point at the old path. Recreate it, or call the tools through the environment's Python: `.venv/bin/python -m streamlit run app/streamlit_app.py`.
 
-**Notebooks.** Every non-empty `.py` file in `app/`, `src/` and `tests/` has a generated Jupyter notebook next to it with the same name. The `.py` files are the source of truth (the app, tests and commands import them). `src/evaluation/run_evaluation.ipynb` ends with a `MODE` switch that defaults to `None`, so *Run All* cannot start the full evaluation by accident.
+**Notebooks.** Every non-empty `.py` file in `app/`, `src` and `tests/` has a generated Jupyter notebook next to it with the same name. The `.py` files are the source of truth (the app, tests and commands import them). The Phase 1 and Phase 2 evaluation notebooks default to no training, so *Run All* cannot accidentally repeat the full searches.
 
 ## 3. Project layout
 
 ```
-config.yaml              seeds, CV design, feature groups, model settings and tuning grids (single source of truth)
-requirements.txt         minimum versions        requirements-lock.txt   exact tested versions
-data/raw/                original archive (not committed; see data/raw/README.md)
-notebooks/01_eda.ipynb   executed EDA notebook
-src/data/                loader.py (loading, target mapping), verify.py, eda.py
-src/features/            preprocessing.py (leakage-safe numeric and discrete pipelines)
-src/models/              bayesian_network.py, naive_bayes.py, pipelines.py (all six models)
-src/evaluation/          splits.py (shared folds), cv.py (nested CV), metrics.py, run_evaluation.py, interpret.py
-app/, src/webapp/        Streamlit web app and its logic; .streamlit/config.toml
-tests/                   unit, integration and headless web-app tests
-results/metrics/         CSV/JSON outputs        results/figures/   plots
-reports/                 project report (Word) and presentation (PowerPoint)
-tools/                   py_to_notebooks.py, run_notebooks.py
+config.yaml                       Phase 1 configuration
+config.phase2.yaml                Phase 2 extension configuration
+requirements.txt / *-lock.txt     shared minimum and exact dependencies
+data/raw/                         source archive/docs and four processed cohort files
+notebooks/01_eda.ipynb            retained Phase 1 Cleveland EDA
+notebooks/02_phase2_all_cohorts.ipynb  executed Phase 2 four-cohort audit
+src/data/                         shared loader + Phase 1 and Phase 2 verification/EDA
+src/features/                     shared leakage-safe preprocessing
+src/models/                       Phase 1 models + Phase 2 MLP and BN--MLP hybrid
+src/evaluation/                   Phase 1 evaluation + Phase 2 search/runs/ablations
+app/, src/webapp/                 retained Phase 1 Streamlit app and its logic
+tests/                            Phase 1 regression tests + Phase 2 tests
+results/metrics/, results/figures/  retained Phase 1 outputs
+results/phase2/                   isolated Phase 2 pilot and main outputs
+reports/project_report/, presentation/  retained Phase 1 submissions
+reports/phase2/                   IEEE Phase 2 source, references, and generated tables
+tools/                            shared notebook generation/execution tools
 ```
 
 ## 4. Data
 
-**Source.** UCI Machine Learning Repository, *Heart Disease* (https://archive.ics.uci.edu/dataset/45/heart+disease), archive `heart+disease.zip` (23 files, documented in `heart-disease.names`). Primary file: `processed.cleveland.data`. The Hungarian, Switzerland and VA files are **not** used. The archive's own `WARNING` file says `cleveland.data` is corrupted and `processed.cleveland.data` is the usable one. Hashes, licence and citation are in `data/raw/README.md`.
+**Phase 2 source.** UCI Machine Learning Repository, *Heart Disease* (https://archive.ics.uci.edu/dataset/45/heart+disease), archive `heart+disease.zip` (23 files, documented in `heart-disease.names`). Phase 2 uses exactly the four independent processed files: Cleveland (303 rows), Hungarian (294), Switzerland (123), and Long Beach VA (200), for 920 patients. Raw/reprocessed alternatives are not added because they represent the same cohorts. Hashes, licence, citation, and visible file paths are in `data/raw/README.md` and `results/phase2/main/metrics/data_verification.json`.
+
+**Retained Phase 1 source.** The Phase 1 commands still use only `processed.cleveland.data`, preserving the original 303-patient baseline and its saved outputs.
 
 **Schema** (no header, `?` = missing): `age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, num`.
 
-**Observed statistics** (`results/metrics/data_verification.json`): 303 rows x 14 columns; all numeric; missing `ca` = 4 and `thal` = 2 (6 rows); 0 duplicate rows; `num` counts 0/1/2/3/4 = 164/55/36/35/13.
+**Phase 2 observed statistics** (`results/phase2/main/metrics/data_verification.json`): 920 rows, 411 negative and 509 positive. Missing predictor cells by cohort are Cleveland 6, Hungarian 782, Switzerland 273, and VA 698. The original target and cohort provenance are preserved; preprocessing handles missing values inside training folds.
 
-**Target.** `num` is preserved. Binary target `target = 0` if `num = 0`, `1` if `num` in {1, 2, 3, 4}; other or missing values raise an error. Observed 164 negative / 139 positive (45.9% positive).
+**Target.** `num` is preserved. Binary target `target = 0` if `num = 0`, `1` if `num` in {1, 2, 3, 4}; other or missing values raise an error. Phase 1 has 164 negative / 139 positive; Phase 2 has 411 negative / 509 positive.
 
-**EDA summary** (`notebooks/01_eda.ipynb`, descriptive only): no invalid or implausible values; binary target close to balanced; only one predictor pair has |Spearman| >= 0.5 (`oldpeak`-`slope`, 0.595); sparse levels (`restecg = 1`: 4 rows, `thal = 6`: 18, `ca = 3`: 20, `slope = 3`: 21, `cp = 1`: 23); `cp = 4` (asymptomatic) has the highest positive rate (0.729), which probably reflects referral into angiography. `ca`, `thal`, `oldpeak`, `slope`, `exang`, `thalach` come from exercise/imaging work-ups, so performance would not transfer to initial triage. Correlation is not causation: confounding, selection and reverse relationships all produce the same patterns.
+**Phase 1 EDA summary** (`notebooks/01_eda.ipynb`, descriptive only): no invalid or implausible values; binary target close to balanced; only one predictor pair has |Spearman| >= 0.5 (`oldpeak`-`slope`, 0.595); sparse levels (`restecg = 1`: 4 rows, `thal = 6`: 18, `ca = 3`: 20, `slope = 3`: 21, `cp = 1`: 23); `cp = 4` (asymptomatic) has the highest positive rate (0.729), which probably reflects referral into angiography. The Phase 2 cohort audit is in `notebooks/02_phase2_all_cohorts.ipynb`. `ca`, `thal`, `oldpeak`, `slope`, `exang`, `thalach` come from exercise/imaging work-ups, so performance would not transfer to initial triage. Correlation is not causation: confounding, selection and reverse relationships all produce the same patterns.
 
 ## 5. Methodology
 
