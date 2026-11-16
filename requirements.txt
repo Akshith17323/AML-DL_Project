@@ -22,3 +22,6 @@ pyflakes>=3.0
 torch>=2.1
 optuna>=4.0
 optuna-integration[sklearn]>=4.0
+shap>=0.44
+pypdf>=5.0
+joblib>=1.3
