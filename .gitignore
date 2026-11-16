@@ -23,11 +23,15 @@ credentials*
 .idea/
 .vscode/
 
-# Raw and derived data are not committed: obtain the archive as described in data/raw/README.md
+# Keep the four public processed Phase 2 cohorts visible like Phase 1; ignore the archive and other raw variants.
 data/raw/*
 !data/raw/README.md
 !data/raw/.gitkeep
+!data/raw/heart-disease.names
 !data/raw/processed.cleveland.data
+!data/raw/processed.hungarian.data
+!data/raw/processed.switzerland.data
+!data/raw/processed.va.data
 data/processed/*
 !data/processed/.gitkeep
 

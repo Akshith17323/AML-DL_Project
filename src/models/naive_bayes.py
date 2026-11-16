@@ -17,7 +17,7 @@ from sklearn.naive_bayes import CategoricalNB
 from src.data.loader import BINARY_TARGET, FEATURE_COLUMNS
 
 
-class NaiveBayesClassifier(BaseEstimator, ClassifierMixin):
+class NaiveBayesClassifier(ClassifierMixin, BaseEstimator):
     """predict_proba -> (n, 2), columns ordered by ``classes_`` = [0, 1]."""
 
     def __init__(self, alpha: float = 1.0):
