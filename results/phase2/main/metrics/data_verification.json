@@ -1,0 +1,86 @@
+{
+  "n_rows": 920,
+  "negative": 411,
+  "positive": 509,
+  "cohorts": {
+    "Cleveland": {
+      "n_rows": 303,
+      "negative": 164,
+      "positive": 139,
+      "missing_predictor_cells": 6,
+      "missing_per_feature": {
+        "ca": 4,
+        "thal": 2
+      },
+      "duplicate_rows": 0
+    },
+    "Hungarian": {
+      "n_rows": 294,
+      "negative": 188,
+      "positive": 106,
+      "missing_predictor_cells": 782,
+      "missing_per_feature": {
+        "trestbps": 1,
+        "chol": 23,
+        "fbs": 8,
+        "restecg": 1,
+        "thalach": 1,
+        "exang": 1,
+        "slope": 190,
+        "ca": 291,
+        "thal": 266
+      },
+      "duplicate_rows": 1
+    },
+    "Switzerland": {
+      "n_rows": 123,
+      "negative": 8,
+      "positive": 115,
+      "missing_predictor_cells": 273,
+      "missing_per_feature": {
+        "trestbps": 2,
+        "fbs": 75,
+        "restecg": 1,
+        "thalach": 1,
+        "exang": 1,
+        "oldpeak": 6,
+        "slope": 17,
+        "ca": 118,
+        "thal": 52
+      },
+      "duplicate_rows": 0
+    },
+    "VA": {
+      "n_rows": 200,
+      "negative": 51,
+      "positive": 149,
+      "missing_predictor_cells": 698,
+      "missing_per_feature": {
+        "trestbps": 56,
+        "chol": 7,
+        "fbs": 7,
+        "thalach": 53,
+        "exang": 53,
+        "oldpeak": 56,
+        "slope": 102,
+        "ca": 198,
+        "thal": 166
+      },
+      "duplicate_rows": 1
+    }
+  },
+  "patient_ids_unique": true,
+  "cohort_source_files": {
+    "Cleveland": "data/raw/processed.cleveland.data",
+    "Hungarian": "data/raw/processed.hungarian.data",
+    "Switzerland": "data/raw/processed.switzerland.data",
+    "VA": "data/raw/processed.va.data"
+  },
+  "cohort_file_sha256": {
+    "Cleveland": "a74b7efa387bc9d108d7d0115d831fe9b414b29ae7124f331b622b4efa0427c8",
+    "Hungarian": "d1ad108f785768cd3d7e82dc522e6f5a61eea93cccfb3a46ee8076f73fc3d796",
+    "Switzerland": "834a405ccf5b66ab4056bb77794adc8df0b7125186454c0a1d002d33c6c3b314",
+    "VA": "e7c93d8d0d2acdadfa4c5e8de768e2191e7f618b952e29623f1f0d5949ff6b8f"
+  },
+  "archive_sha256": "b17cd273da9ce1caa4710fce80227ea454d4dbf9fcbc8e6a9121672751563adc"
+}

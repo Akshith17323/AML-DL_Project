@@ -1,0 +1,76 @@
+{
+  "n_rows": 920,
+  "negative": 411,
+  "positive": 509,
+  "cohorts": {
+    "Cleveland": {
+      "n_rows": 303,
+      "negative": 164,
+      "positive": 139,
+      "missing_predictor_cells": 6,
+      "missing_per_feature": {
+        "ca": 4,
+        "thal": 2
+      },
+      "duplicate_rows": 0
+    },
+    "Hungarian": {
+      "n_rows": 294,
+      "negative": 188,
+      "positive": 106,
+      "missing_predictor_cells": 782,
+      "missing_per_feature": {
+        "trestbps": 1,
+        "chol": 23,
+        "fbs": 8,
+        "restecg": 1,
+        "thalach": 1,
+        "exang": 1,
+        "slope": 190,
+        "ca": 291,
+        "thal": 266
+      },
+      "duplicate_rows": 1
+    },
+    "Switzerland": {
+      "n_rows": 123,
+      "negative": 8,
+      "positive": 115,
+      "missing_predictor_cells": 273,
+      "missing_per_feature": {
+        "trestbps": 2,
+        "fbs": 75,
+        "restecg": 1,
+        "thalach": 1,
+        "exang": 1,
+        "oldpeak": 6,
+        "slope": 17,
+        "ca": 118,
+        "thal": 52
+      },
+      "duplicate_rows": 0
+    },
+    "VA": {
+      "n_rows": 200,
+      "negative": 51,
+      "positive": 149,
+      "missing_predictor_cells": 698,
+      "missing_per_feature": {
+        "trestbps": 56,
+        "chol": 7,
+        "fbs": 7,
+        "thalach": 53,
+        "exang": 53,
+        "oldpeak": 56,
+        "slope": 102,
+        "ca": 198,
+        "thal": 166
+      },
+      "duplicate_rows": 1
+    }
+  },
+  "patient_ids_unique": true,
+  "figures": [
+    "cohort_data_audit.png"
+  ]
+}

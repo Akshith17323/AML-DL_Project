@@ -1,0 +1,9 @@
+model,outer_id,best_inner_neg_log_loss,best_params,runtime_seconds
+Bayesian Network,0,-0.4792801809684511,"{""model__pseudo_count"": 2.8057582076672514}",0.23414950000005774
+Naive Bayes,0,-0.5197274998377075,"{""model__alpha"": 2.8057582076672514}",0.031379041996842716
+Logistic Regression,0,-0.44576249274331425,"{""model__C"": 0.13292918943162169}",0.04602741700000479
+SVM,0,-0.4134791232203393,"{""model__C"": 0.5611516415334507, ""model__gamma"": ""scale""}",0.07521679199999198
+Random Forest,0,-0.4675938290435804,"{""model__max_depth"": 3, ""model__min_samples_leaf"": 1, ""model__n_estimators"": 200}",0.3001704590024019
+Gradient Boosting,0,-0.4536985861815083,"{""model__learning_rate"": 0.047377279007281566, ""model__max_depth"": 3, ""model__n_estimators"": 200}",0.29296954199890024
+MLP,0,-0.688002329082996,"{""batch_size"": 32, ""dropout"": 0.3394633936788147, ""hidden_layout"": ""16-8"", ""learning_rate"": 0.0001700037298921101, ""weight_decay"": 2.9375384576328295e-05}",0.8356663750018924
+BN-MLP Stack,0,-0.45836381836003015,"{""bn_pseudo_count"": 2.8057582076672514, ""meta_C"": 3.9676050770529874, ""mlp_dropout"": 0.1624074561769746, ""mlp_hidden_layout"": ""16"", ""mlp_learning_rate"": 0.00016998978382700775, ""mlp_weight_decay"": 1.493656855461762e-05}",0.9339465830016707

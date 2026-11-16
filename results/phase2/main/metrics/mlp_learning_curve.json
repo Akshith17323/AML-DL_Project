@@ -1,0 +1,15 @@
+{
+  "outer_id": 0,
+  "best_params": {
+    "batch_size": 32,
+    "dropout": 0.41015141268858735,
+    "hidden_layout": "32-16",
+    "learning_rate": 0.0026329770063803913,
+    "weight_decay": 0.004884290758873456
+  },
+  "best_epoch": 39,
+  "epochs_run": 55,
+  "n_parameters": 1217,
+  "weight_train_rows": 588,
+  "stopping_rows": 148
+}

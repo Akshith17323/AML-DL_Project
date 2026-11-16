@@ -1,0 +1,64 @@
+{
+  "n_samples_explained": 250,
+  "base_expected_value": 0.588518949924037,
+  "features": [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "top_features_by_mean_abs_shap": [
+    {
+      "feature": "ca",
+      "mean_abs_shap": 0.11431131639061975
+    },
+    {
+      "feature": "cp",
+      "mean_abs_shap": 0.11065324493813926
+    },
+    {
+      "feature": "oldpeak",
+      "mean_abs_shap": 0.07018972118299831
+    },
+    {
+      "feature": "thal",
+      "mean_abs_shap": 0.058319304696807184
+    },
+    {
+      "feature": "slope",
+      "mean_abs_shap": 0.05508303926766365
+    }
+  ],
+  "key_interactions_evaluated": [
+    {
+      "features": [
+        "age",
+        "thalach"
+      ],
+      "finding": "MLP captures nonlinear interaction where low max heart rate escalates risk disproportionately with age; fixed BN discretises into 3 tertiles."
+    },
+    {
+      "features": [
+        "trestbps",
+        "cp"
+      ],
+      "finding": "MLP captures amplified risk when elevated resting blood pressure co-occurs with asymptomatic chest pain; fixed BN assumes trestbps and cp are conditionally independent."
+    }
+  ],
+  "generated_figures": {
+    "beeswarm": "mlp_shap_beeswarm.png",
+    "importance_bars": "mlp_shap_bar_importance.png",
+    "age_thalach": "mlp_shap_interaction_age_thalach.png",
+    "trestbps_cp": "mlp_shap_interaction_trestbps_cp.png",
+    "comparison": "mlp_vs_bn_interaction_comparison.png"
+  }
+}
