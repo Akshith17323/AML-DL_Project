@@ -1,0 +1,33 @@
+model,outer_id,best_inner_neg_log_loss,best_params,runtime_seconds
+Bayesian Network,0,-0.44159953489414416,"{""model__pseudo_count"": 14.553179565665339}",2.7952688330005913
+Bayesian Network,1,-0.453277678368811,"{""model__pseudo_count"": 26.136352946125662}",2.338308374997723
+Bayesian Network,2,-0.4523603419180182,"{""model__pseudo_count"": 26.98310020124853}",2.5924612909984717
+Bayesian Network,3,-0.41615101844939106,"{""model__pseudo_count"": 28.777225315525953}",2.6893026670004474
+Naive Bayes,0,-0.4331154602863849,"{""model__alpha"": 43.614302187619174}",0.49836691599921323
+Naive Bayes,1,-0.4473200489362415,"{""model__alpha"": 49.90012000090751}",0.7126782080013072
+Naive Bayes,2,-0.4427395811012349,"{""model__alpha"": 48.14425241326009}",0.5833975830028066
+Naive Bayes,3,-0.4031235461893586,"{""model__alpha"": 48.92419478421473}",0.5601335419996758
+Logistic Regression,0,-0.44007425183606813,"{""model__C"": 0.1725616184751512}",0.6487546660027874
+Logistic Regression,1,-0.4221250859441568,"{""model__C"": 0.4097532980221565}",0.6755301660014084
+Logistic Regression,2,-0.43149863780706604,"{""model__C"": 0.16873991639106986}",0.6679555000009714
+Logistic Regression,3,-0.3793467387284575,"{""model__C"": 0.2620739830667657}",0.6701946670000325
+SVM,0,-0.4059108268811377,"{""model__C"": 0.8168455894760166, ""model__gamma"": ""scale""}",1.0862177080016409
+SVM,1,-0.4167012626834647,"{""model__C"": 0.7789628064511686, ""model__gamma"": 0.1}",1.0328712920018006
+SVM,2,-0.42291183821407435,"{""model__C"": 0.7166432953436668, ""model__gamma"": 0.1}",1.3563669159993879
+SVM,3,-0.36001183414527466,"{""model__C"": 0.7743530119612988, ""model__gamma"": ""scale""}",1.1174458330024208
+Random Forest,0,-0.4234145889052882,"{""model__max_depth"": null, ""model__min_samples_leaf"": 4, ""model__n_estimators"": 400}",5.701879542000825
+Random Forest,1,-0.42558689554472534,"{""model__max_depth"": null, ""model__min_samples_leaf"": 2, ""model__n_estimators"": 200}",5.036680125002022
+Random Forest,2,-0.43025827225830104,"{""model__max_depth"": null, ""model__min_samples_leaf"": 2, ""model__n_estimators"": 300}",6.367473750000499
+Random Forest,3,-0.3759311606520232,"{""model__max_depth"": null, ""model__min_samples_leaf"": 1, ""model__n_estimators"": 400}",6.129470083000342
+Gradient Boosting,0,-0.4278918463083863,"{""model__learning_rate"": 0.05407232133324004, ""model__max_depth"": 2, ""model__n_estimators"": 100}",2.0852674580019084
+Gradient Boosting,1,-0.4202708137089343,"{""model__learning_rate"": 0.0927086396950479, ""model__max_depth"": 1, ""model__n_estimators"": 150}",2.197822541998903
+Gradient Boosting,2,-0.44011439753668463,"{""model__learning_rate"": 0.04952329662836252, ""model__max_depth"": 2, ""model__n_estimators"": 100}",2.4565431250011898
+Gradient Boosting,3,-0.3662472336432838,"{""model__learning_rate"": 0.16004114354368632, ""model__max_depth"": 1, ""model__n_estimators"": 150}",2.4469010419998085
+MLP,0,-0.4289742483455145,"{""batch_size"": 32, ""dropout"": 0.33619716338386185, ""hidden_layout"": ""16-8"", ""learning_rate"": 0.002010466778661987, ""weight_decay"": 0.0001019378482282373}",10.529806375001499
+MLP,1,-0.4260281443465596,"{""batch_size"": 16, ""dropout"": 0.26158266679218783, ""hidden_layout"": ""16"", ""learning_rate"": 0.0002872802121229301, ""weight_decay"": 5.372718032960174e-05}",13.137591833998158
+MLP,2,-0.43354128040213785,"{""batch_size"": 16, ""dropout"": 0.32974257123820516, ""hidden_layout"": ""16-8"", ""learning_rate"": 0.001437583271928368, ""weight_decay"": 4.119954864531404e-05}",9.613744499998575
+MLP,3,-0.3776519639230984,"{""batch_size"": 16, ""dropout"": 0.36004096843502104, ""hidden_layout"": ""32-16"", ""learning_rate"": 0.0029068060676599515, ""weight_decay"": 0.00025766311046198156}",7.194038666999404
+BN-MLP Stack,0,-0.4262136956354033,"{""bn_pseudo_count"": 6.199983918423043, ""meta_C"": 5.829384542994738, ""mlp_dropout"": 0.4757995766256757, ""mlp_hidden_layout"": ""16-8"", ""mlp_learning_rate"": 0.0020978213384576817, ""mlp_weight_decay"": 0.0006218704727769079}",37.89066041600017
+BN-MLP Stack,1,-0.4319149794512081,"{""bn_pseudo_count"": 2.9722889298928643, ""meta_C"": 2.211693737965433, ""mlp_dropout"": 0.45968433752288473, ""mlp_hidden_layout"": ""32-16"", ""mlp_learning_rate"": 0.0010465628828533865, ""mlp_weight_decay"": 3.497139530598363e-05}",41.25756937500046
+BN-MLP Stack,2,-0.4357036055760078,"{""bn_pseudo_count"": 0.5324675456758712, ""meta_C"": 6.427408613909564, ""mlp_dropout"": 0.41701400009563955, ""mlp_hidden_layout"": ""32-16"", ""mlp_learning_rate"": 0.002399572568193022, ""mlp_weight_decay"": 0.00043270326901265237}",43.27152091700191
+BN-MLP Stack,3,-0.3880707068266614,"{""bn_pseudo_count"": 2.61163898022789, ""meta_C"": 3.1901343629235344, ""mlp_dropout"": 0.33482343461923747, ""mlp_hidden_layout"": ""16"", ""mlp_learning_rate"": 0.00028385369404308796, ""mlp_weight_decay"": 0.00013055203473059178}",40.386379790998035
