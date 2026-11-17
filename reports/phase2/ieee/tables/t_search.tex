@@ -1,0 +1,14 @@
+\begin{tabular}{p{0.16\linewidth}p{0.62\linewidth}r}
+\toprule
+Model & Selected values over the 5 pooled outer folds & Time (s) \\
+\midrule
+BN & pseudo\_count 15.4--28.8 & 12 \\
+NB & alpha 43.6--49.9 & 2 \\
+LR & C 0.154--0.467 & 3 \\
+SVM & C 0.451--6.69; gamma scale(3), 0.1(1), 0.01(1) & 6 \\
+RF & max\_depth None(5); min\_samples\_leaf 2(3), 3(1), 1(1); n\_estimators 200(2), 400(1), 300(1), 100(1) & 27 \\
+GB & learning\_rate 0.0363--0.122; max\_depth 1(2), 2(2), 3(1); n\_estimators 200(2), 150(2), 100(1) & 12 \\
+MLP & batch\_size 16(4), 32(1); dropout 0.202--0.41; hidden\_layout 32-16(4), 16(1); learning\_rate 0.00047--0.00263; weight\_decay 1.17e-05--0.00877 & 72 \\
+BN--MLP stack & bn\_pseudo\_count 0.542--7.43; meta\_C 1.01--8.01; mlp\_dropout 0.109--0.453; mlp\_hidden\_layout 32-16(2), 16(2), 16-8(1); mlp\_learning\_rate 0.000258--0.00294; mlp\_weight\_decay 1.4e-05--0.000581 & 211 \\
+\bottomrule
+\end{tabular}

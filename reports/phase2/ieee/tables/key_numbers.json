@@ -1,0 +1,44 @@
+{
+  "pooled_auc": {
+    "Bayesian Network": 0.875,
+    "Naive Bayes": 0.879,
+    "Logistic Regression": 0.889,
+    "SVM": 0.895,
+    "Random Forest": 0.886,
+    "Gradient Boosting": 0.889,
+    "MLP": 0.888,
+    "BN-MLP Stack": 0.889
+  },
+  "cross_auc": {
+    "Bayesian Network": 0.817,
+    "Naive Bayes": 0.832,
+    "Logistic Regression": 0.827,
+    "SVM": 0.825,
+    "Random Forest": 0.827,
+    "Gradient Boosting": 0.825,
+    "MLP": 0.809,
+    "BN-MLP Stack": 0.825
+  },
+  "mean_heldout_auc": {
+    "Bayesian Network": 0.804,
+    "Naive Bayes": 0.81,
+    "Logistic Regression": 0.783,
+    "SVM": 0.788,
+    "Random Forest": 0.8,
+    "Gradient Boosting": 0.792,
+    "MLP": 0.769,
+    "BN-MLP Stack": 0.783
+  },
+  "loco_minus_pooled_auc": {
+    "Bayesian Network": -0.057,
+    "Naive Bayes": -0.046,
+    "Logistic Regression": -0.062,
+    "SVM": -0.07,
+    "Random Forest": -0.059,
+    "Gradient Boosting": -0.064,
+    "MLP": -0.079,
+    "BN-MLP Stack": -0.063
+  },
+  "n_trials_total_pooled": 480,
+  "n_trials_total_cross": 384
+}

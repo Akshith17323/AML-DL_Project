@@ -1,0 +1,15 @@
+\begin{tabular}{llrr}
+\toprule
+Suite & Variant & ROC AUC & Log loss \\
+\midrule
+mlp & full & 0.889 & 0.417 \\
+mlp & no\_dropout & 0.891 & 0.422 \\
+mlp & no\_weight\_decay & 0.888 & 0.422 \\
+mlp & no\_early\_stopping & 0.892 & 0.419 \\
+mlp & one\_hidden\_layer & 0.892 & 0.412 \\
+integration & BN & 0.876 & 0.474 \\
+integration & MLP & 0.889 & 0.417 \\
+integration & simple\_average & 0.889 & 0.417 \\
+integration & learned\_stack & 0.890 & 0.417 \\
+\bottomrule
+\end{tabular}

@@ -1,0 +1,15 @@
+\begin{tabular}{lcccc}
+\toprule
+Model & Pooled AUC & LOCO AUC & Mean held-out AUC & $\Delta$ (LOCO$-$pooled) \\
+\midrule
+BN & 0.875 & 0.817 & 0.804 & $-0.057$ \\
+NB & 0.879 & 0.832 & \textbf{0.810} & $-0.046$ \\
+LR & 0.889 & 0.827 & 0.783 & $-0.062$ \\
+SVM & 0.895 & 0.825 & 0.788 & $-0.070$ \\
+RF & 0.886 & 0.827 & 0.800 & $-0.059$ \\
+GB & 0.889 & 0.825 & 0.792 & $-0.064$ \\
+\midrule
+MLP & 0.888 & 0.809 & 0.769 & $-0.079$ \\
+BN--MLP stack & 0.889 & 0.825 & 0.783 & $-0.063$ \\
+\bottomrule
+\end{tabular}
