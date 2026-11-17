@@ -1,0 +1,40 @@
+{
+  "BN-MLP Stack": {
+    "bn_pseudo_count": 2.61163898022789,
+    "meta_C": 3.1901343629235344,
+    "mlp_dropout": 0.33482343461923747,
+    "mlp_hidden_layout": "16",
+    "mlp_learning_rate": 0.00028385369404308796,
+    "mlp_weight_decay": 0.00013055203473059178
+  },
+  "Bayesian Network": {
+    "model__pseudo_count": 28.777225315525953
+  },
+  "Gradient Boosting": {
+    "model__learning_rate": 0.03626438372899203,
+    "model__max_depth": 3,
+    "model__n_estimators": 150
+  },
+  "Logistic Regression": {
+    "model__C": 0.4452810166265695
+  },
+  "MLP": {
+    "batch_size": 16,
+    "dropout": 0.2787006355011247,
+    "hidden_layout": "32-16",
+    "learning_rate": 0.0004701940492970466,
+    "weight_decay": 0.00017816996836231128
+  },
+  "Naive Bayes": {
+    "model__alpha": 48.92419478421473
+  },
+  "Random Forest": {
+    "model__max_depth": null,
+    "model__min_samples_leaf": 1,
+    "model__n_estimators": 200
+  },
+  "SVM": {
+    "model__C": 0.7166432953436668,
+    "model__gamma": 0.1
+  }
+}
