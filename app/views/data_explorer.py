@@ -5,7 +5,7 @@ import streamlit as st
 
 from app.views.common import banner, footer, require_data
 from src.data.eda import CATEGORICAL, CONTINUOUS, DESCRIPTIONS
-from src.data.loader import FEATURE_COLUMNS
+from src.data.loader import FEATURE_COLUMNS, PHASE2_CONFIG_PATH, load_all_cohorts, load_config, resolve
 
 
 def render() -> None:
@@ -18,7 +18,9 @@ def render() -> None:
     c[1].metric("Disease (num 1-4)", f"{int(y.sum())} ({100 * y.mean():.1f}%)")
     c[2].metric("Predictors", len(FEATURE_COLUMNS))
     c[3].metric("Rows with missing values", int(X.isna().any(axis=1).sum()))
-    tab1, tab2, tab3, tab4 = st.tabs(["Distributions", "Feature vs target", "Correlations", "Missing values and levels"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "Distributions", "Feature vs target", "Correlations", "Missing values and levels", "Phase 2 Multi-Cohort Audit"
+    ])
     plot_df = X.assign(target=y.map({0: "no disease", 1: "disease"}))
     with tab1:
         feat = st.selectbox("Predictor", FEATURE_COLUMNS, key="dist_feat", format_func=lambda f: f"{f}: {DESCRIPTIONS[f]}")
@@ -58,4 +60,22 @@ def render() -> None:
                         for f in ["cp", "restecg", "slope", "ca", "thal"]])
         lv["level"] = lv["level"].map(lambda v: "missing" if pd.isna(v) else f"{v:g}")
         st.dataframe(lv[["feature", "level", "patients"]], hide_index=True)
+    with tab5:
+        st.subheader("Phase 2 Multi-Cohort Audit (920 patients across 4 hospitals)")
+        try:
+            cfg2 = load_config(PHASE2_CONFIG_PATH)
+            df_all = load_all_cohorts(config=cfg2)
+            c_counts = df_all.groupby("cohort")["target"].agg(
+                patients="count",
+                positives=lambda s: int(s.sum()),
+                prevalence=lambda s: f"{100 * s.mean():.1f}%"
+            ).reset_index()
+            st.markdown("**Cohort breakdown:**")
+            st.dataframe(c_counts, hide_index=True, use_container_width=True)
+
+            audit_img = resolve(cfg2["paths"]["figures"]) / "cohort_data_audit.png"
+            if audit_img.exists():
+                st.image(str(audit_img), caption="Missingness and Pre-test Probability Across Cohorts")
+        except Exception as e:
+            st.info(f"Multi-cohort audit data not displayed: {e}")
     footer()

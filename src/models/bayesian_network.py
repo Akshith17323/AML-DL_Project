@@ -52,7 +52,7 @@ def build_structure() -> BayesianNetwork:
     return model
 
 
-class BayesianNetworkClassifier(BaseEstimator, ClassifierMixin):
+class BayesianNetworkClassifier(ClassifierMixin, BaseEstimator):
     """Fixed-structure BN. Input: integer-coded discrete DataFrame (see
     ``src.features.preprocessing.build_discrete_preprocessor``).
 

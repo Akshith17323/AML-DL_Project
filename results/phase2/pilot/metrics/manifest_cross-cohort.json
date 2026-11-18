@@ -1,0 +1,45 @@
+{
+  "pilot": true,
+  "protocol": "cross-cohort",
+  "n_patients": 920,
+  "cohort_counts": {
+    "Cleveland": 303,
+    "Hungarian": 294,
+    "VA": 200,
+    "Switzerland": 123
+  },
+  "cohort_file_sha256": {
+    "Cleveland": "a74b7efa387bc9d108d7d0115d831fe9b414b29ae7124f331b622b4efa0427c8",
+    "Hungarian": "d1ad108f785768cd3d7e82dc522e6f5a61eea93cccfb3a46ee8076f73fc3d796",
+    "Switzerland": "834a405ccf5b66ab4056bb77794adc8df0b7125186454c0a1d002d33c6c3b314",
+    "VA": "e7c93d8d0d2acdadfa4c5e8de768e2191e7f618b952e29623f1f0d5949ff6b8f"
+  },
+  "models": [
+    "Bayesian Network",
+    "Naive Bayes",
+    "Logistic Regression",
+    "SVM",
+    "Random Forest",
+    "Gradient Boosting",
+    "MLP",
+    "BN-MLP Stack"
+  ],
+  "outer_folds_run": 1,
+  "outer_fold_hash": "1236120e228670da",
+  "inner_folds": 2,
+  "search": {
+    "method": "optuna_tpe",
+    "scoring": "neg_log_loss",
+    "n_trials": 1,
+    "n_jobs": 1
+  },
+  "seed": 42,
+  "versions": {
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.9.1",
+    "torch": "2.15.0",
+    "optuna": "5.1.0"
+  },
+  "python": "3.11.16"
+}
