@@ -105,7 +105,7 @@ def get_xy(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
 
 def load_all_cohorts(archive_path: str | Path | None = None,
                      config: dict | None = None) -> pd.DataFrame:
-    """Load the four independent processed UCI cohorts from the source archive.
+    """Load the four independent processed UCI cohorts from the source archive or raw files.
 
     Raw/reprocessed archive members are alternate forms of these cohorts and are
     deliberately not concatenated as extra patients.
@@ -116,15 +116,31 @@ def load_all_cohorts(archive_path: str | Path | None = None,
     if dict(cohorts) != COHORT_FILES:
         raise ValueError(f"Phase 2 cohorts must be exactly {COHORT_FILES}")
     archive = resolve(archive_path or data_cfg["archive"])
+    raw_dir = PROJECT_ROOT / "data/raw"
+    all_files_exist = all((raw_dir / member).exists() for member in cohorts.values())
     frames = []
-    with zipfile.ZipFile(archive) as zf:
-        absent = [member for member in cohorts.values() if member not in zf.namelist()]
-        if absent:
-            raise FileNotFoundError(f"Cohort file(s) missing from archive: {absent}")
+
+    if archive.exists():
+        with zipfile.ZipFile(archive) as zf:
+            absent = [member for member in cohorts.values() if member not in zf.namelist()]
+            if absent:
+                raise FileNotFoundError(f"Cohort file(s) missing from archive: {absent}")
+            for cohort, member in cohorts.items():
+                with zf.open(member) as source:
+                    df = pd.read_csv(source, header=None, na_values=[data_cfg["missing_marker"]],
+                                     skipinitialspace=True)
+                if df.shape[1] != len(EXPECTED_COLUMNS) or df.isna().all(axis=1).any():
+                    raise ValueError(f"{member}: expected {len(EXPECTED_COLUMNS)} columns, found {df.shape[1]}")
+                df.columns = EXPECTED_COLUMNS
+                df[BINARY_TARGET] = map_binary_target(df[ORIGINAL_TARGET])
+                df.insert(0, "cohort_patient_id", [f"{cohort}:{i}" for i in range(len(df))])
+                df.insert(0, "cohort", cohort)
+                frames.append(df)
+    elif all_files_exist:
         for cohort, member in cohorts.items():
-            with zf.open(member) as source:
-                df = pd.read_csv(source, header=None, na_values=[data_cfg["missing_marker"]],
-                                 skipinitialspace=True)
+            file_path = raw_dir / member
+            df = pd.read_csv(file_path, header=None, na_values=[data_cfg["missing_marker"]],
+                             skipinitialspace=True)
             if df.shape[1] != len(EXPECTED_COLUMNS) or df.isna().all(axis=1).any():
                 raise ValueError(f"{member}: expected {len(EXPECTED_COLUMNS)} columns, found {df.shape[1]}")
             df.columns = EXPECTED_COLUMNS
@@ -132,6 +148,9 @@ def load_all_cohorts(archive_path: str | Path | None = None,
             df.insert(0, "cohort_patient_id", [f"{cohort}:{i}" for i in range(len(df))])
             df.insert(0, "cohort", cohort)
             frames.append(df)
+    else:
+        raise FileNotFoundError(f"Neither archive '{archive}' nor individual cohort files in '{raw_dir}' were found.")
+
     out = pd.concat(frames, ignore_index=True)
     if out["cohort_patient_id"].duplicated().any():
         raise RuntimeError("Cohort patient identifiers are not unique")
@@ -143,8 +162,13 @@ def cohort_file_hashes(archive_path: str | Path | None = None,
     """SHA-256 for each processed member used by Phase 2."""
     cfg = config or load_config(PHASE2_CONFIG_PATH)
     archive = resolve(archive_path or cfg["data"]["archive"])
-    with zipfile.ZipFile(archive) as zf:
-        return {cohort: hashlib.sha256(zf.read(member)).hexdigest()
+    if archive.exists():
+        with zipfile.ZipFile(archive) as zf:
+            return {cohort: hashlib.sha256(zf.read(member)).hexdigest()
+                    for cohort, member in cfg["data"]["cohorts"].items()}
+    else:
+        raw_dir = PROJECT_ROOT / "data/raw"
+        return {cohort: hashlib.sha256((raw_dir / member).read_bytes()).hexdigest()
                 for cohort, member in cfg["data"]["cohorts"].items()}
 
 

@@ -23,10 +23,11 @@ credentials*
 .idea/
 .vscode/
 
-# Keep the four public processed Phase 2 cohorts visible like Phase 1; ignore the archive and other raw variants.
+# Keep the four public processed Phase 2 cohorts and source archive visible
 data/raw/*
 !data/raw/README.md
 !data/raw/.gitkeep
+!data/raw/heart+disease.zip
 !data/raw/heart-disease.names
 !data/raw/processed.cleveland.data
 !data/raw/processed.hungarian.data
