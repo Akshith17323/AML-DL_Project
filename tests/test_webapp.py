@@ -161,6 +161,7 @@ def test_estimator_shows_nothing_until_submitted():
 
 def test_estimator_submit_shows_one_valid_probability_per_model():
     at = _page("risk_estimator").run()
+    at.radio[0].set_value("Phase 1: Six models (Cleveland cohort, 303 patients)").run()
     _submit(at).click().run()
     assert not at.exception and len(at.metric) == len(MODEL_ORDER)
     vals = [float(m.value.rstrip("%")) for m in at.metric]
@@ -169,6 +170,7 @@ def test_estimator_submit_shows_one_valid_probability_per_model():
 
 def test_estimator_unknown_ca_thal_is_noted_and_predicts():
     at = _page("risk_estimator").run()
+    at.radio[0].set_value("Phase 1: Six models (Cleveland cohort, 303 patients)").run()
     at.selectbox(key="in_ca").select(inf_unknown()).run()
     at.selectbox(key="in_thal").select(inf_unknown()).run()
     _submit(at).click().run()

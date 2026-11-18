@@ -8,7 +8,6 @@ run in `results/phase2/main/metrics` and checked by an audit script; nothing is 
 python reports/phase2/ieee/scripts/paired_comparisons.py results/phase2/main/metrics reports/phase2/ieee/tables
 python reports/phase2/ieee/scripts/make_ieee_tables.py   results/phase2/main/metrics reports/phase2/ieee/tables
 python reports/phase2/ieee/scripts/audit_report_numbers.py reports/phase2/ieee
-python reports/phase2/ieee/scripts/make_architecture_figure.py results/phase2/main/metrics/final_hyperparameters.json reports/phase2/ieee/figures/final_architecture.tex
 cd reports/phase2/ieee && tectonic main.tex     # or: latexmk -pdf main.tex, or upload the folder to Overleaf
 ```
 
@@ -21,5 +20,3 @@ saved run did not contain; it only reads saved out-of-fold predictions and does 
 `Phase2_IEEE_Report.pdf` was compiled in a sandbox without the official `IEEEtran.cls`, using a
 local stand-in that reproduces the IEEE conference layout. Rebuild with the official class
 (the commands above) before submitting.
-
-`figures/final_architecture.tex` is the neuron-level drawing of the final MLP and BN--MLP stack (Fig. 2). It is TikZ, so it stays sharp in the PDF; `final_architecture.png` and `.pdf` are standalone copies for slides.

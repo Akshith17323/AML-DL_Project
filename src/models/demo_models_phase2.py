@@ -18,9 +18,7 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-import sklearn
-from sklearn.base import BaseEstimator, clone
-from sklearn.linear_model import LogisticRegression
+from sklearn.base import clone
 
 from src.data.loader import (
     FEATURE_COLUMNS,
@@ -68,32 +66,6 @@ def cast_typed_params(params: dict[str, Any]) -> dict[str, Any]:
         else:
             typed[k] = str(v)
     return typed
-
-
-def _strip_deprecated_lr_attrs(obj, _seen=None) -> None:
-    """Make every LogisticRegression inside `obj` safe for this sklearn version.
-
-    Walks pipelines, stacks and any estimator attributes recursively, so a
-    LogisticRegression nested inside a stacking model is also patched. sklearn 1.6
-    reads `self.multi_class` in predict_proba; models fitted under sklearn >= 1.8
-    no longer have that attribute.
-    """
-    _seen = _seen if _seen is not None else set()
-    if id(obj) in _seen:
-        return
-    _seen.add(id(obj))
-    if isinstance(obj, LogisticRegression) and not hasattr(obj, "multi_class"):
-        obj.__dict__["multi_class"] = "deprecated"
-    if isinstance(obj, (list, tuple)):
-        for item in obj:
-            _strip_deprecated_lr_attrs(item, _seen)
-    elif isinstance(obj, dict):
-        for item in obj.values():
-            _strip_deprecated_lr_attrs(item, _seen)
-    elif isinstance(obj, BaseEstimator) or hasattr(obj, "__dict__"):
-        for item in getattr(obj, "__dict__", {}).values():
-            if isinstance(item, (BaseEstimator, list, tuple, dict)):
-                _strip_deprecated_lr_attrs(item, _seen)
 
 
 def select_phase2_hyperparameters(cfg: dict | None = None) -> tuple[dict[str, dict[str, Any]], str]:
@@ -148,7 +120,6 @@ class FinalModelsPhase2:
     train_y: pd.Series
     hyperparameters: dict[str, dict[str, Any]]
     hyperparameter_source: str
-    sklearn_version: str = ""
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def __getstate__(self):
@@ -190,7 +161,6 @@ def fit_final_phase2_models(
         if params_by_model.get(model_name):
             pipe.set_params(**params_by_model[model_name])
         pipe.fit(X, y)
-        _strip_deprecated_lr_attrs(pipe)
         fitted_pipelines[model_name] = pipe
 
     final_models = FinalModelsPhase2(
@@ -199,7 +169,6 @@ def fit_final_phase2_models(
         train_y=y,
         hyperparameters=params_by_model,
         hyperparameter_source=source,
-        sklearn_version=sklearn.__version__,
     )
 
     if save_models_path is None:
@@ -226,15 +195,7 @@ def load_or_fit_phase2_demo_models(
     if cache_path.exists():
         try:
             loaded = joblib.load(cache_path)
-            if (
-                isinstance(loaded, FinalModelsPhase2)
-                and len(loaded.pipelines) == len(PHASE2_MODEL_NAMES)
-                # Pickles are not portable across sklearn versions: refit on mismatch.
-                and getattr(loaded, "sklearn_version", "") == sklearn.__version__
-            ):
-                # Strip any deprecated sklearn attrs that survive pickle/unpickle
-                for pipe in loaded.pipelines.values():
-                    _strip_deprecated_lr_attrs(pipe)
+            if isinstance(loaded, FinalModelsPhase2) and len(loaded.pipelines) == len(PHASE2_MODEL_NAMES):
                 return loaded
         except Exception:
             pass

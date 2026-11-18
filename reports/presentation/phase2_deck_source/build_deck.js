@@ -164,24 +164,39 @@ async function icon(Comp, color, size = 256) {
 
   // ---------- 5. Models: MLP and stack ----------
   s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Method" });
-  s.addText("Deep-learning model and its integration with the BN", { placeholder: "title" });
-  s.addImage({ path: "img/final_stack.png", x: 0.6, y: 1.2, w: 5.65 * 0.7690, h: 5.65, altText: "Final BN-MLP stack: an MLP drawn as perceptrons and a Bayesian network feed a logistic combiner" });
-  card(s, 5.3, 1.3, 7.4, 2.4);
-  txt(s, "Final MLP (Hardik)", { x: 5.6, y: 1.45, w: 7.0, h: 0.4, fontSize: 18, bold: true, fontFace: "Cambria" });
+  s.addText("Deep-learning component and its integration with the BN", { placeholder: "title" });
+  txt(s, "Regularised MLP (PyTorch, sklearn-compatible)", { x: 0.6, y: 1.35, w: 6.0, h: 0.4, fontSize: 18, bold: true, fontFace: "Cambria" });
+  const layers = [["13 raw\ninputs", C.accent6], ["impute,\nscale,\none-hot\nd = 20", C.accent6], ["32\nReLU\ndropout", C.accent4], ["16\nReLU\ndropout", C.accent4], ["1\nsigmoid", C.accent2]];
+  layers.forEach((l, i) => {
+    const x = 0.6 + i * 1.22;
+    const dark = i >= 2;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.95, w: 1.02, h: 1.35, fill: { color: l[1] }, line: { type: "none" }, rectRadius: 0.08 });
+    txt(s, l[0], { x, y: 1.95, w: 1.02, h: 1.35, fontSize: 13, align: "center", valign: "middle", color: dark ? C.background1 : C.text1, bold: dark });
+    if (i < layers.length - 1) s.addShape(pres.shapes.RIGHT_ARROW, { x: x + 1.04, y: 2.52, w: 0.16, h: 0.22, fill: { color: C.accent5 }, line: { type: "none" } });
+  });
   txt(s, [
-    { text: "20 inputs \u2192 32 ReLU \u2192 16 ReLU \u2192 1 sigmoid: 1,217 weights", options: { bullet: true, breakLine: true } },
-    { text: "BCE loss, Adam, weight decay, dropout 0.28, batch 16", options: { bullet: true, breakLine: true } },
-    { text: "Early stopping on a 20% split of the raw training rows; preprocessing fitted on the other 80% only", options: { bullet: true } },
-  ], { x: 5.6, y: 1.9, w: 6.9, h: 1.75, fontSize: 15, paraSpaceAfter: 5 });
-  card(s, 5.3, 3.95, 7.4, 2.65, C.text2);
-  txt(s, "Cross-fitted stack (Vansh)", { x: 5.6, y: 4.1, w: 7.0, h: 0.4, fontSize: 18, bold: true, fontFace: "Cambria", color: C.background1 });
-  txt(s, [
-    { text: "BN and MLP each give P(disease) for every training patient from 3 internal folds, so never from a model that saw that patient", options: { bullet: true, breakLine: true } },
-    { text: "A logistic meta-perceptron learns the weights \u03b2\u2081, \u03b2\u2082", options: { bullet: true, breakLine: true } },
-    { text: "BN brings structure and transfer; MLP brings smooth interactions", options: { bullet: true } },
-  ], { x: 5.6, y: 4.55, w: 6.9, h: 2.0, fontSize: 15, color: C.background1, paraSpaceAfter: 5 });
+    { text: "BCE loss, Adam, weight decay, dropout, batch 16/32", options: { bullet: true, breakLine: true } },
+    { text: "Early stopping on a 20% split of the raw training rows; preprocessing fitted on the other 80% only", options: { bullet: true, breakLine: true } },
+    { text: "Layout searched: 16, 16-8 or 32-16 (353 to 1,217 weights); 32-16 chosen in 4 of 5 folds", options: { bullet: true, breakLine: true } },
+    { text: "No CNN or LSTM: patient features have no spatial or time order", options: { bullet: true } },
+  ], { x: 0.6, y: 3.55, w: 5.95, h: 3.2, fontSize: 15, paraSpaceAfter: 6 });
+
+  card(s, 7.0, 1.35, 5.7, 5.4, C.text2);
+  txt(s, "Cross-fitted BN–MLP stack", { x: 7.3, y: 1.55, w: 5.1, h: 0.4, fontSize: 18, bold: true, fontFace: "Cambria", color: C.background1 });
+  const steps = [
+    "Split the training rows into 3 folds",
+    "Fit BN and MLP on 2 folds, predict the 3rd: out-of-fold P(disease) for every patient",
+    "Fit a regularised logistic combiner on [p_BN, p_MLP]",
+    "Refit BN and MLP on all training rows for prediction",
+  ];
+  steps.forEach((t, i) => {
+    numDot(s, i + 1, 7.3, 2.2 + i * 0.95, C.accent4);
+    txt(s, t, { x: 7.9, y: 2.15 + i * 0.95, w: 4.55, h: 0.85, fontSize: 15, color: C.background1, valign: "middle" });
+  });
+  txt(s, "The combiner never sees a probability from a model that was trained on that patient.",
+    { x: 7.3, y: 6.0, w: 5.1, h: 0.6, fontSize: 13, italic: true, color: HEX.accent6 });
   who(s, "Hardik (MLP) \u00b7 Vansh (stack)");
-  s.addNotes("Presenters: Hardik for the MLP, then Vansh for the stack. HARDIK: Our deep-learning model is a small feed-forward network. The 13 predictors are imputed, scaled and one-hot encoded into 20 inputs. The final network chosen by TPE has two ReLU layers of 32 and 16 neurons and one sigmoid output, 1,217 weights in total. We train with binary cross-entropy and Adam, with weight decay and dropout. Early stopping uses a 20% split of the raw training rows, and the preprocessing is fitted only on the other 80%, so nothing leaks. We searched 16, 16-8 and 32-16; 32-16 won in 4 of 5 folds. No CNN or LSTM, because patient features have no spatial or time order. VANSH: The diagram is the final stack. The MLP part (drawn as perceptrons) and our expert Bayesian network each give a probability. A logistic meta-perceptron combines them with weights beta1 and beta2. It is trained only on out-of-fold probabilities from 3 internal folds, so it never sees a probability from a model trained on that patient. Then both base models are refit on all training rows.");
+  s.addNotes("Presenters: Hardik (MLP), then Vansh (stack). The MLP is small on purpose: 920 patients and 13 predictors. Early stopping is leakage-safe because the stopping rows are split off before the preprocessor is fitted. The stack follows stacked generalisation: the meta-learner must learn from out-of-fold predictions, otherwise it would learn to trust over-fitted in-sample probabilities. The BN brings expert structure and transfer; the MLP brings smooth nonlinear interactions.");
 
   // ---------- 6. HPO without loops ----------
   s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Method" });
