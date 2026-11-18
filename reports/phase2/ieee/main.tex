@@ -128,25 +128,14 @@ Weights are fitted by mini-batch Adam \cite{adam} on the binary cross-entropy wi
 \end{equation}
 (PyTorch's \code{Adam(weight\_decay)} adds $\lambda\boldsymbol\theta$ to the gradient, i.e.\ coupled L2 regularisation rather than the decoupled AdamW form \cite{adamw}.) Early stopping \cite{prechelt} is made leakage-safe: inside \code{fit}, the \emph{raw} training rows are first split 80/20 (stratified) into weight-training and stopping rows; the preprocessor is fitted on the 80\% only; training stops when stopping-set loss has not improved by $10^{-4}$ for 15 epochs (maximum 150), and the best weights are restored. Outer-test patients therefore influence neither preprocessing, nor weights, nor the stopping epoch.
 
-The search space (Table~\ref{tab:space}) allows three layouts: 16 (353 parameters), 16--8 (481) and 32--16 (1{,}217). Even the largest has only about two parameters per weight-training patient ($\approx$590 per fold), and dropout, weight decay and early stopping further limit its effective capacity. Fig.~\ref{fig:arch} shows the architecture.
+The search space (Table~\ref{tab:space}) allows three layouts: 16 (353 parameters), 16--8 (481) and 32--16 (1{,}217). Even the largest has only about two parameters per weight-training patient ($\approx$590 per fold), and dropout, weight decay and early stopping further limit its effective capacity. Fig.~\ref{fig:arch}(a) draws the final selected network unit by unit.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\begin{tikzpicture}[font=\tiny, node distance=2.2mm,
-  box/.style={draw, rounded corners=2pt, align=center, text width=10.5mm, minimum height=9mm, inner sep=1.5pt},
-  arr/.style={-{Latex[length=1.3mm]}, thick}]
-\node[box, fill=gray!12] (raw) {13 raw\\predictors};
-\node[box, fill=blue!8, right=of raw] (pre) {impute,\\scale,\\one-hot\\$d=20$};
-\node[box, fill=red!10, right=of pre] (h1) {Linear 32\\ReLU\\Dropout $p$};
-\node[box, fill=red!10, right=of h1] (h2) {Linear 16\\ReLU\\Dropout $p$};
-\node[box, fill=orange!15, right=of h2] (out) {Linear 1\\sigmoid\\$\hat p$};
-\draw[arr] (raw) -- (pre); \draw[arr] (pre) -- (h1); \draw[arr] (h1) -- (h2); \draw[arr] (h2) -- (out);
-\node[anchor=north, align=center, text width=0.85\columnwidth, font=\scriptsize] at ($(raw.south)!0.5!(out.south)+(0,-2mm)$)
- {Adam + weight decay $\lambda$, BCE loss, batch 16/32; early stopping on a stratified 20\% split of the raw training rows (patience 15).};
-\end{tikzpicture}
-\caption{The 32--16 MLP layout (selected in four of five pooled outer folds). The preprocessor is fitted only on the weight-training rows.}
+\resizebox{\textwidth}{!}{\input{figures/final_architecture.tex}}
+\caption{The final Phase~2 models, drawn neuron by neuron with the hyperparameters TPE selected on all 920 patients. (a) Final MLP: the 13 predictors become 20 standardised or one-hot inputs, followed by two fully connected ReLU layers (32 and 16 units) and a sigmoid output unit; every line is one trainable weight (1{,}217 parameters in total). Crossed dashed units illustrate one random dropout mask during training. (b) Final BN--MLP stack: an MLP with one 16-unit hidden layer and the expert-structured Bayesian network (abbreviated; disease node D) each output a probability, and a logistic ``meta-perceptron'' trained only on their out-of-fold probabilities combines them.}
 \label{fig:arch}
-\end{figure}
+\end{figure*}
 
 \subsection{BN--MLP integration by cross-fitted stacking}
 The BN and the MLP make different assumptions: the BN imposes clinical structure, gives calibrated probabilities through explicit CPTs and transfers well, while the MLP models smooth nonlinear interactions on continuous inputs. We integrate them with a stacked generalisation \cite{wolpert,superlearner} (\code{BNMLPStackingClassifier}). Given a training set $D$:
@@ -155,7 +144,7 @@ The BN and the MLP make different assumptions: the BN imposes clinical structure
 \item fit a regularised logistic combiner $\hat p_i = \sigma(\beta_0 + \beta_1 p^{\text{BN}}_i + \beta_2 p^{\text{MLP}}_i)$ with inverse strength $C$;
 \item refit the BN and the MLP on all of $D$; at prediction time their probabilities feed the combiner.
 \end{enumerate}
-Each meta-feature therefore comes from a base model that never saw that patient, and the whole procedure runs inside the outer training fold, so outer patients never reach it. A unit test checks the cross-fitting property. As an integration control, \code{BNMLPAverageClassifier} averages the two probabilities without learning.
+Each meta-feature therefore comes from a base model that never saw that patient, and the whole procedure runs inside the outer training fold, so outer patients never reach it. A unit test checks the cross-fitting property. As an integration control, \code{BNMLPAverageClassifier} averages the two probabilities without learning. Fig.~\ref{fig:arch}(b) shows the final stack.
 
 \subsection{Library-managed hyperparameter selection}
 Phase~1 enumerated a grid with a hand-written \code{for params in combos} loop. Phase~2 removes this: one shared builder (\code{make\_search}) wraps each model in \code{optuna\_integration.OptunaSearchCV} with a seeded \code{TPESampler}, a stratified 3-fold inner CV, \code{scoring="neg\_log\_loss"}, 12 trials and \code{refit=True}. TPE models the density of good configurations $\ell(\mathbf{x})$ and of the rest $g(\mathbf{x})$ and proposes the candidate that maximises $\ell(\mathbf{x})/g(\mathbf{x})$ \cite{bergstra}, so later trials concentrate where earlier ones did well. Log loss is used because it rewards calibrated probabilities, not just ranking. Table~\ref{tab:space} lists the search spaces, which were frozen before the main run; log-uniform priors are used for scale parameters. The library owns all candidate iteration and inner cross-validation; the only project loops iterate over outer folds and models, which is evaluation, not selection. Each outer fold uses seed $42+k$, and \code{best\_params\_}, \code{best\_score\_}, runtime and the full trial history (480 pooled and 384 LOCO trials) are saved.
