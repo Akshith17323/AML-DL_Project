@@ -11,18 +11,47 @@ from src.data.loader import FEATURE_COLUMNS, PHASE2_CONFIG_PATH, load_all_cohort
 def render() -> None:
     st.title("Data explorer")
     banner()
+
+    try:
+        cfg2 = load_config(PHASE2_CONFIG_PATH)
+        df_all = load_all_cohorts(config=cfg2)
+    except Exception:
+        df_all = None
+
     X, y, df = require_data()
-    st.caption("Descriptive views of the Cleveland data. Nothing here is a significance test, and associations are not causal.")
+
+    st.caption("Descriptive audit and statistical distributions across international clinical cohorts (920 multi-cohort patients, 303 Cleveland baseline).")
     c = st.columns(4)
     c[0].metric("Patients", len(df))
     c[1].metric("Disease (num 1-4)", f"{int(y.sum())} ({100 * y.mean():.1f}%)")
     c[2].metric("Predictors", len(FEATURE_COLUMNS))
     c[3].metric("Rows with missing values", int(X.isna().any(axis=1).sum()))
+
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "Distributions", "Feature vs target", "Correlations", "Missing values and levels", "Phase 2 Multi-Cohort Audit"
+        "Phase 2 Multi-Cohort Audit (920 patients)", "Distributions", "Feature vs target", "Correlations", "Missing values and levels"
     ])
+
     plot_df = X.assign(target=y.map({0: "no disease", 1: "disease"}))
+
     with tab1:
+        st.subheader("Phase 2 Multi-Cohort Audit (920 patients across 4 hospitals)")
+        if df_all is not None:
+            c_counts = df_all.groupby("cohort")["target"].agg(
+                patients="count",
+                positives=lambda s: int(s.sum()),
+                prevalence=lambda s: f"{100 * s.mean():.1f}%"
+            ).reset_index()
+            st.markdown("**Cohort breakdown:**")
+            st.dataframe(c_counts, hide_index=True, use_container_width=True)
+
+            audit_img = resolve(cfg2["paths"]["figures"]) / "cohort_data_audit.png"
+            if audit_img.exists():
+                st.image(str(audit_img), caption="Missingness and Pre-test Probability Across Cohorts (Cleveland, Hungarian, Long Beach VA, Switzerland)")
+        else:
+            st.info("Multi-cohort data not available.")
+
+    with tab2:
+        st.markdown("**Predictor Distributions (Cleveland Cohort)**")
         feat = st.selectbox("Predictor", FEATURE_COLUMNS, key="dist_feat", format_func=lambda f: f"{f}: {DESCRIPTIONS[f]}")
         if feat in CONTINUOUS:
             bins = st.slider("Bins", 5, 40, 20, key="dist_bins")
@@ -35,7 +64,9 @@ def render() -> None:
                 alt.Color("target:N", scale=alt.Scale(domain=["no disease", "disease"], range=["#0072B2", "#D55E00"])),
                 xOffset="target:N")
         st.altair_chart(ch.properties(height=320), use_container_width=True)
-    with tab2:
+
+    with tab3:
+        st.markdown("**Feature vs Disease Target (Cleveland Cohort)**")
         cat = st.selectbox("Categorical predictor", CATEGORICAL, key="rate_feat", format_func=lambda f: f"{f}: {DESCRIPTIONS[f]}")
         g = plot_df.dropna(subset=[cat]).groupby(cat)["target"].agg(n="count", positive_rate=lambda s: (s == "disease").mean()).reset_index()
         st.altair_chart(alt.Chart(g).mark_bar(color="#D55E00").encode(
@@ -44,38 +75,25 @@ def render() -> None:
         st.dataframe(g, hide_index=True)
         st.caption("Small groups give unstable rates; compare with the group size n. A high rate in one group (for example asymptomatic "
                    "chest pain) probably reflects who was referred for angiography.")
-    with tab3:
+
+    with tab4:
+        st.markdown("**Predictor Correlations (Spearman Rank)**")
         corr = X.corr(method="spearman").reset_index(names="a").melt("a", var_name="b", value_name="rho")
         st.altair_chart(alt.Chart(corr).mark_rect().encode(
             alt.X("b:O", title=None), alt.Y("a:O", title=None),
             alt.Color("rho:Q", scale=alt.Scale(scheme="redblue", domain=[-1, 1], reverse=True)),
             tooltip=["a", "b", alt.Tooltip("rho:Q", format=".2f")]).properties(height=420), use_container_width=True)
         st.caption("Spearman correlation between predictors. Nominal codes (cp, restecg, thal) have no natural order, so their coefficients are only a rough guide.")
-    with tab4:
+
+    with tab5:
+        st.markdown("**Missing Values & Level Counts**")
         miss = X.isna().sum()
         st.dataframe(pd.DataFrame({"missing": miss[miss > 0]}))
-        st.caption("Only `ca` and `thal` have missing values. In the study they are filled with the training-fold mode.")
+        st.caption("Only `ca` and `thal` have missing values in Cleveland. In multi-cohort Swiss and Long Beach, missingness is more severe.")
         st.markdown("**Patients per level** (sparse levels make probability estimates unstable)")
         lv = pd.concat([X[f].value_counts(dropna=False).sort_index().rename_axis("level").reset_index(name="patients").assign(feature=f)
                         for f in ["cp", "restecg", "slope", "ca", "thal"]])
         lv["level"] = lv["level"].map(lambda v: "missing" if pd.isna(v) else f"{v:g}")
         st.dataframe(lv[["feature", "level", "patients"]], hide_index=True)
-    with tab5:
-        st.subheader("Phase 2 Multi-Cohort Audit (920 patients across 4 hospitals)")
-        try:
-            cfg2 = load_config(PHASE2_CONFIG_PATH)
-            df_all = load_all_cohorts(config=cfg2)
-            c_counts = df_all.groupby("cohort")["target"].agg(
-                patients="count",
-                positives=lambda s: int(s.sum()),
-                prevalence=lambda s: f"{100 * s.mean():.1f}%"
-            ).reset_index()
-            st.markdown("**Cohort breakdown:**")
-            st.dataframe(c_counts, hide_index=True, use_container_width=True)
 
-            audit_img = resolve(cfg2["paths"]["figures"]) / "cohort_data_audit.png"
-            if audit_img.exists():
-                st.image(str(audit_img), caption="Missingness and Pre-test Probability Across Cohorts")
-        except Exception as e:
-            st.info(f"Multi-cohort audit data not displayed: {e}")
     footer()

@@ -53,8 +53,8 @@ def render() -> None:
 
     suite = st.radio(
         "Demonstration model suite",
-        ["Phase 1: Six models (Cleveland cohort, 303 patients)",
-         "Phase 2: Eight models (All four cohorts, 920 patients - incl. regularised MLP and Stack)"],
+        ["Phase 2: Eight models (All four cohorts, 920 patients - incl. regularised MLP and Stack)",
+         "Phase 1: Six models (Cleveland cohort, 303 patients)"],
         index=0,
         horizontal=True,
     )
